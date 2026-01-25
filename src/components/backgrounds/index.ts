@@ -1,3 +1,8 @@
 export { BackgroundCanvas } from './BackgroundCanvas';
 export { GradientBackground } from './GradientBackground';
 export { StarryBackground } from './StarryBackground';
+export { BokehBackground } from './BokehBackground';
+export { CloudBackground } from './CloudBackground';
+export { TimelineBackground } from './TimelineBackground';
+export { SparkleBackground } from './SparkleBackground';
+export { SimpleGradientBackground } from './SimpleGradientBackground';
