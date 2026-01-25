@@ -27,6 +27,7 @@ project-root/
 ├── docs/
 │   ├── SPEC.md            # 詳細仕様書
 │   ├── DEVELOPMENT.md     # 開発フェーズ・チェックリスト
+│   ├── DEPLOYMENT.md      # デプロイフロー
 │   ├── FUTURE.md          # 将来実装検討事項
 │   └── DATABASE.md        # DB設計（実装時に作成）
 ```
@@ -38,6 +39,7 @@ project-root/
 | CLAUDE.md | プロジェクト概要、開発ルール | ルール変更時 |
 | SPEC.md | 機能の詳細仕様 | 仕様変更時に必ず更新 |
 | DEVELOPMENT.md | 開発タスク・チェックリスト | タスク完了時に必ず更新 |
+| DEPLOYMENT.md | デプロイフロー・Vercel操作 | デプロイ手順変更時 |
 | FUTURE.md | 将来実装予定の機能 | 新しい検討事項追加時 |
 
 ---
