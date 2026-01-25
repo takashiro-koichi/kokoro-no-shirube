@@ -156,3 +156,41 @@ export interface WishlistWithEvaluation extends Wishlist {
   condition1_met?: boolean;
   condition2_met?: boolean;
 }
+
+// =====================================
+// 振り返り機能関連
+// =====================================
+
+// タイムラインアイテム（日記・夢を統合した型）
+export interface TimelineItem {
+  id: string;
+  type: 'diary' | 'dream';
+  date: string;
+  content: string;
+  summary: string | null;
+  emotion_tags: string[] | null;
+  dream_keywords?: string[];
+  fortune_result?: string | null;
+  created_at: string;
+}
+
+// カレンダーの日付データ
+export interface CalendarDayData {
+  date: string;
+  hasDiary: boolean;
+  hasDream: boolean;
+  hasAchievement: boolean;
+  emotionEmoji: string | null;
+  diarySummary: string | null;
+  dreamKeywords?: string[];
+}
+
+// タイムラインのフィルタ設定
+export interface TimelineFilters {
+  type: 'diary' | 'dream' | 'both';
+  keyword: string;
+  dateFrom: string;
+  dateTo: string;
+  emotionTags: string[];
+  dreamKeywords: string[];
+}
