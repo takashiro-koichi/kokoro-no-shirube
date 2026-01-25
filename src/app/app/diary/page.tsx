@@ -1,8 +1,444 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Trash2,
+  Wand2,
+  Loader2,
+  Undo2,
+  Plus,
+} from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import {
+  getDiaryByDate,
+  createDiary,
+  updateDiary,
+  deleteDiary,
+  getUserSettings,
+} from '@/lib/supabase/queries';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
+import { VoiceInput } from '@/components/diary/VoiceInput';
+import type { Diary, VoiceFormatLevel } from '@/lib/supabase/types';
+
+function formatDate(date: Date): string {
+  return date.toISOString().split('T')[0];
+}
+
+function formatDisplayDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const days = ['日', '月', '火', '水', '木', '金', '土'];
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日（${days[date.getDay()]}）`;
+}
+
 export default function DiaryPage() {
+  const { user } = useAuth();
+  const [selectedDate, setSelectedDate] = useState(formatDate(new Date()));
+  const [content, setContent] = useState('');
+  const [diary, setDiary] = useState<Diary | null>(null);
+  const [voiceFormatLevel, setVoiceFormatLevel] =
+    useState<VoiceFormatLevel>('thorough');
+
+  // 音声入力用
+  const [voiceText, setVoiceText] = useState('');
+
+  // 履歴（元に戻す用）
+  const [contentHistory, setContentHistory] = useState<string[]>([]);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isFormatting, setIsFormatting] = useState(false);
+  const [isFormattingVoice, setIsFormattingVoice] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  // 日記と設定を読み込む
+  const loadData = useCallback(async () => {
+    if (!user) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const supabase = createClient();
+
+      // 設定を取得
+      const settings = await getUserSettings(supabase, user.id);
+      if (settings) {
+        setVoiceFormatLevel(settings.voice_format_level);
+      }
+
+      // 日記を取得
+      const diaryData = await getDiaryByDate(supabase, user.id, selectedDate);
+      setDiary(diaryData);
+      setContent(diaryData?.content || '');
+      setVoiceText('');
+      setContentHistory([]);
+    } catch (err) {
+      console.error('Failed to load diary:', err);
+      setError('読み込みに失敗しました');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, selectedDate]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // 日付変更
+  const changeDate = (days: number) => {
+    const date = new Date(selectedDate);
+    date.setDate(date.getDate() + days);
+    setSelectedDate(formatDate(date));
+    setSuccess(null);
+  };
+
+  // 音声入力のトランスクリプト追加（音声テキストエリアに追加）
+  const handleTranscript = (text: string) => {
+    setVoiceText((prev) => prev + text);
+  };
+
+  // 履歴に保存してからコンテンツを更新
+  const updateContentWithHistory = (newContent: string) => {
+    setContentHistory((prev) => [...prev, content]);
+    setContent(newContent);
+  };
+
+  // 元に戻す
+  const handleUndo = () => {
+    if (contentHistory.length === 0) return;
+    const previousContent = contentHistory[contentHistory.length - 1];
+    setContentHistory((prev) => prev.slice(0, -1));
+    setContent(previousContent);
+  };
+
+  // 全文整形
+  const handleFormatAll = async () => {
+    if (!content.trim()) return;
+
+    setIsFormatting(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/diary/format', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: content, level: voiceFormatLevel }),
+      });
+
+      if (!response.ok) {
+        throw new Error('整形に失敗しました');
+      }
+
+      const data = await response.json();
+      updateContentWithHistory(data.formatted);
+    } catch (err) {
+      console.error('Format error:', err);
+      setError('整形に失敗しました');
+    } finally {
+      setIsFormatting(false);
+    }
+  };
+
+  // 整形して追記
+  const handleFormatAndAdd = async () => {
+    if (!voiceText.trim()) return;
+
+    setIsFormattingVoice(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/diary/format', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: voiceText, level: voiceFormatLevel }),
+      });
+
+      if (!response.ok) {
+        throw new Error('整形に失敗しました');
+      }
+
+      const data = await response.json();
+      const newContent = content
+        ? content + '\n\n' + data.formatted
+        : data.formatted;
+      updateContentWithHistory(newContent);
+      setVoiceText('');
+    } catch (err) {
+      console.error('Format error:', err);
+      setError('整形に失敗しました');
+    } finally {
+      setIsFormattingVoice(false);
+    }
+  };
+
+  // そのまま追記（整形なし）
+  const handleAddWithoutFormat = () => {
+    if (!voiceText.trim()) return;
+    const newContent = content ? content + '\n\n' + voiceText : voiceText;
+    updateContentWithHistory(newContent);
+    setVoiceText('');
+  };
+
+  // 保存
+  const handleSave = async () => {
+    if (!user || !content.trim()) return;
+
+    setIsSaving(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const supabase = createClient();
+
+      let savedDiary: Diary;
+
+      if (diary) {
+        // 更新
+        savedDiary = await updateDiary(supabase, diary.id, {
+          content,
+          content_updated_at: new Date().toISOString(),
+        });
+      } else {
+        // 新規作成
+        savedDiary = await createDiary(supabase, {
+          user_id: user.id,
+          date: selectedDate,
+          content,
+        });
+      }
+
+      // AI分析（感情タグ・要約生成）
+      try {
+        const analyzeResponse = await fetch('/api/diary/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content }),
+        });
+
+        if (analyzeResponse.ok) {
+          const analyzeData = await analyzeResponse.json();
+          savedDiary = await updateDiary(supabase, savedDiary.id, {
+            summary: analyzeData.summary,
+            emotion_tags: analyzeData.emotion_tags,
+          });
+        }
+      } catch (analyzeErr) {
+        console.error('Analyze error:', analyzeErr);
+        // 分析失敗しても保存は成功とする
+      }
+
+      setDiary(savedDiary);
+      setSuccess('保存しました');
+      setContentHistory([]); // 保存後は履歴をクリア
+    } catch (err) {
+      console.error('Save error:', err);
+      setError('保存に失敗しました');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // 削除
+  const handleDelete = async () => {
+    if (!diary) return;
+
+    if (!confirm('この日記を削除しますか？')) return;
+
+    setIsDeleting(true);
+    setError(null);
+
+    try {
+      const supabase = createClient();
+      await deleteDiary(supabase, diary.id);
+      setDiary(null);
+      setContent('');
+      setContentHistory([]);
+      setSuccess('削除しました');
+    } catch (err) {
+      console.error('Delete error:', err);
+      setError('削除に失敗しました');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const isProcessing = isSaving || isFormatting || isFormattingVoice || isDeleting;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">日記</h1>
-      <p className="text-muted-foreground">日記機能（Phase 3で実装予定）</p>
+    <div className="space-y-6 max-w-2xl mx-auto">
+      {/* 日付選択 */}
+      <div className="flex items-center justify-between">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => changeDate(-1)}
+          disabled={isProcessing}
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </Button>
+        <h1 className="text-xl font-bold">{formatDisplayDate(selectedDate)}</h1>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => changeDate(1)}
+          disabled={isProcessing || selectedDate === formatDate(new Date())}
+        >
+          <ChevronRight className="w-5 h-5" />
+        </Button>
+      </div>
+
+      {/* 入力エリア */}
+      <div className="space-y-2">
+        <Label htmlFor="content">日記</Label>
+        <Textarea
+          id="content"
+          placeholder="今日あったことを書いてみましょう..."
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          disabled={isProcessing}
+          rows={15}
+          className="resize-none"
+        />
+      </div>
+
+      {/* 音声入力エリア */}
+      <Card>
+        <CardContent className="pt-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <Label>音声入力</Label>
+            <VoiceInput onTranscript={handleTranscript} disabled={isProcessing} />
+          </div>
+          {voiceText && (
+            <>
+              <div className="p-3 bg-muted rounded-md">
+                <p className="text-sm whitespace-pre-wrap">{voiceText}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleFormatAndAdd}
+                  disabled={isProcessing}
+                >
+                  {isFormattingVoice ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Wand2 className="w-4 h-4 mr-2" />
+                  )}
+                  整形して追記
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleAddWithoutFormat}
+                  disabled={isProcessing}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  そのまま追記
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setVoiceText('')}
+                  disabled={isProcessing}
+                >
+                  クリア
+                </Button>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* アクションボタン */}
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant="outline"
+          onClick={handleFormatAll}
+          disabled={isProcessing || !content.trim()}
+        >
+          {isFormatting ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Wand2 className="w-4 h-4 mr-2" />
+          )}
+          全文整形する
+        </Button>
+        {contentHistory.length > 0 && (
+          <Button
+            variant="outline"
+            onClick={handleUndo}
+            disabled={isProcessing}
+          >
+            <Undo2 className="w-4 h-4 mr-2" />
+            戻す
+          </Button>
+        )}
+        <div className="flex-1" />
+        {diary && (
+          <Button
+            variant="outline"
+            onClick={handleDelete}
+            disabled={isProcessing}
+            className="text-red-600 hover:text-red-700"
+          >
+            {isDeleting ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Trash2 className="w-4 h-4 mr-2" />
+            )}
+            削除
+          </Button>
+        )}
+        <Button onClick={handleSave} disabled={isProcessing || !content.trim()}>
+          {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+          {isSaving ? '保存中...' : '保存'}
+        </Button>
+      </div>
+
+      {/* メッセージ */}
+      {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+      {success && (
+        <p className="text-green-600 text-sm text-center">{success}</p>
+      )}
+
+      {/* 分析結果 */}
+      {diary && (diary.summary || diary.emotion_tags?.length) && (
+        <Card className="bg-muted/50">
+          <CardContent className="pt-4 space-y-2">
+            {diary.emotion_tags && diary.emotion_tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {diary.emotion_tags.map((tag, i) => (
+                  <span
+                    key={i}
+                    className="px-2 py-1 bg-primary/10 text-primary text-sm rounded-full"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+            {diary.summary && (
+              <p className="text-sm text-muted-foreground">{diary.summary}</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getUserProfile } from '@/lib/supabase/queries';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
@@ -11,6 +12,21 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
+      // ユーザー情報を取得
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        // ユーザープロフィールが存在するかチェック
+        const profile = await getUserProfile(supabase, user.id);
+
+        if (!profile) {
+          // 初期登録未完了の場合はオンボーディングへ
+          return NextResponse.redirect(`${origin}/onboarding`);
+        }
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

@@ -41,8 +41,57 @@ export async function updateSession(request: NextRequest) {
 
   // 認証済みで /login へアクセスした場合
   if (pathname === '/login' && user) {
+    // プロフィール存在チェック
+    const { data: profile } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile) {
+      // オンボーディング未完了
+      const onboardingUrl = new URL('/onboarding', request.url);
+      return NextResponse.redirect(onboardingUrl);
+    }
+
     const homeUrl = new URL('/app/home', request.url);
     return NextResponse.redirect(homeUrl);
+  }
+
+  // /onboarding への未認証アクセス
+  if (pathname === '/onboarding' && !user) {
+    const loginUrl = new URL('/login', request.url);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // 認証済みで /app/* へアクセスした場合、オンボーディングチェック
+  if (pathname.startsWith('/app') && user) {
+    const { data: profile } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile) {
+      // オンボーディング未完了
+      const onboardingUrl = new URL('/onboarding', request.url);
+      return NextResponse.redirect(onboardingUrl);
+    }
+  }
+
+  // オンボーディング完了済みで /onboarding へアクセス
+  if (pathname === '/onboarding' && user) {
+    const { data: profile } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', user.id)
+      .single();
+
+    if (profile) {
+      // すでにオンボーディング完了済み
+      const homeUrl = new URL('/app/home', request.url);
+      return NextResponse.redirect(homeUrl);
+    }
   }
 
   return supabaseResponse;
