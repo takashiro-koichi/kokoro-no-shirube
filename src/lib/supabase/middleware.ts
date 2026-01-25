@@ -27,7 +27,23 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { pathname } = request.nextUrl;
+
+  // 認証が必要なルート（/app/*）への未認証アクセス
+  if (pathname.startsWith('/app') && !user) {
+    const loginUrl = new URL('/login', request.url);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // 認証済みで /login へアクセスした場合
+  if (pathname === '/login' && user) {
+    const homeUrl = new URL('/app/home', request.url);
+    return NextResponse.redirect(homeUrl);
+  }
 
   return supabaseResponse;
 }

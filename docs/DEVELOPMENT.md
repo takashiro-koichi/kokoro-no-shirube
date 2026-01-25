@@ -54,11 +54,11 @@
 ## Phase 2: 認証・ユーザー管理
 
 ### 2-1. 認証
-- [ ] Supabase Authentication 設定
-- [ ] Google OAuth 設定
-- [ ] ログインページ実装
-- [ ] ログアウト機能実装
-- [ ] 認証状態管理（Context or Zustand）
+- [x] Supabase Authentication 設定
+- [x] Google OAuth 設定
+- [x] ログインページ実装
+- [x] ログアウト機能実装
+- [x] 認証状態管理（Context or Zustand）
 
 ### 2-2. 初期登録フロー
 - [ ] 初期登録ページ実装
@@ -288,3 +288,4 @@
 |------|--------|------|
 | 2025-01-25 | - | 初版作成 |
 | 2025-01-25 | Claude | Phase 1 実装完了（環境変数設定を除く） |
+| 2025-01-25 | Claude | Phase 2-1 認証機能実装完了 |
