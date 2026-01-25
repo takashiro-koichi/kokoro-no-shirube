@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { User, Mic, Moon, LogOut, ChevronRight } from 'lucide-react';
+import { User, Mic, Moon, LogOut, ChevronRight, BookUser } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -24,6 +24,12 @@ const settingsItems = [
     icon: Moon,
     label: '夢占い設定',
     description: '夢占いモード選択',
+  },
+  {
+    href: '/app/settings/glossary',
+    icon: BookUser,
+    label: '固有名詞',
+    description: '夢占いの精度向上に活用',
   },
 ];
 

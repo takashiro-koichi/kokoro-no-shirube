@@ -38,9 +38,16 @@ declare global {
   }
 }
 
+// ブラウザサポートチェック（クライアントサイドのみ）
+function getSpeechRecognition() {
+  if (typeof window === 'undefined') return null;
+  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+
 export function VoiceInput({ onTranscript, disabled }: VoiceInputProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isSupported, setIsSupported] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
   const [interimText, setInterimText] = useState('');
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const shouldRestartRef = useRef(false);
@@ -60,17 +67,24 @@ export function VoiceInput({ onTranscript, disabled }: VoiceInputProps) {
     }
   }, []);
 
+  // マウント状態とブラウザサポートチェック
   useEffect(() => {
-    // ブラウザサポートチェック
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
+    // useEffectの中で外部システム（ブラウザAPI）のサポートを確認
+    const SpeechRecognitionClass = getSpeechRecognition();
+    const supported = !!SpeechRecognitionClass;
 
-    if (!SpeechRecognition) {
-      setIsSupported(false);
-      return;
-    }
+    // requestAnimationFrameを使って次のフレームで状態を更新
+    // これにより同期的なsetStateを回避
+    requestAnimationFrame(() => {
+      setIsMounted(true);
+      if (!supported) {
+        setIsSupported(false);
+      }
+    });
 
-    const recognition = new SpeechRecognition();
+    if (!SpeechRecognitionClass) return;
+
+    const recognition = new SpeechRecognitionClass();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'ja-JP';
@@ -146,6 +160,16 @@ export function VoiceInput({ onTranscript, disabled }: VoiceInputProps) {
       startRecognition();
     }
   };
+
+  // マウント前はローディング状態、マウント後は実際のサポート状況を表示
+  if (!isMounted) {
+    return (
+      <Button variant="outline" disabled>
+        <Mic className="w-4 h-4 mr-2" />
+        音声入力
+      </Button>
+    );
+  }
 
   if (!isSupported) {
     return (

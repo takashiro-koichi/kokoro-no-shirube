@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { VoiceInput } from '@/components/diary/VoiceInput';
+import { VoiceInput } from '@/components/common/VoiceInput';
 import type { Diary, VoiceFormatLevel } from '@/lib/supabase/types';
 
 function formatDate(date: Date): string {
