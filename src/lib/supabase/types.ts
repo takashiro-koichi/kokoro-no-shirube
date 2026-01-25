@@ -87,3 +87,72 @@ export interface ApiLimitStatus {
   limit: number;
   remainingCount: number;
 }
+
+// =====================================
+// ウィッシュリスト関連
+// =====================================
+
+// 属性キー
+export type AttributeKey =
+  // 金銭・資産系
+  | 'annual_income'
+  | 'savings'
+  | 'investment_assets'
+  | 'monthly_disposable'
+  | 'debt_balance'
+  // 時間・ライフステージ系
+  | 'age'
+  | 'child_age'
+  | 'years_employed'
+  | 'paid_leave_remaining'
+  | 'retired'
+  // 健康・自己投資系
+  | 'weight'
+  | 'certification'
+  // 人間関係・状況系
+  | 'has_partner'
+  | 'residence'
+  | 'job_title';
+
+// 比較演算子
+export type ComparisonOperator = 'gte' | 'lte' | 'eq';
+
+// ユーザー属性
+export interface UserAttribute {
+  id: string;
+  user_id: string;
+  attribute_key: string;
+  attribute_value: number | null;
+  text_value: string | null;
+  boolean_value: boolean | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ウィッシュリストのステータス
+export type WishlistStatus = 'pending' | 'achievable' | 'achieved';
+
+// ウィッシュリスト
+export interface Wishlist {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  condition1_attribute: string | null;
+  condition1_operator: string | null;
+  condition1_value: number | null;
+  condition2_attribute: string | null;
+  condition2_operator: string | null;
+  condition2_value: number | null;
+  deadline: string | null;
+  status: WishlistStatus;
+  achieved_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ウィッシュリスト（条件評価結果付き）
+export interface WishlistWithEvaluation extends Wishlist {
+  condition1_met?: boolean;
+  condition2_met?: boolean;
+}

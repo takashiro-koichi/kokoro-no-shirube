@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { User, Mic, Moon, LogOut, ChevronRight, BookUser } from 'lucide-react';
+import { User, Mic, Moon, LogOut, ChevronRight, BookUser, Sliders } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -30,6 +30,12 @@ const settingsItems = [
     icon: BookUser,
     label: '固有名詞',
     description: '夢占いの精度向上に活用',
+  },
+  {
+    href: '/app/settings/attributes',
+    icon: Sliders,
+    label: '条件用属性',
+    description: 'ウィッシュリストの条件判定用',
   },
 ];
 
