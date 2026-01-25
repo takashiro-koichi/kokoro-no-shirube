@@ -124,3 +124,107 @@
     @apply text-foreground;
   }
 }
+
+/* マイクロインタラクション */
+@layer components {
+  /* ボタンのホバー・アクティブエフェクト */
+  .btn-interactive {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .btn-interactive:hover {
+    @apply scale-[1.02];
+  }
+
+  .btn-interactive:active {
+    @apply scale-[0.98];
+  }
+
+  /* カードのホバーエフェクト */
+  .card-interactive {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .card-interactive:hover {
+    @apply shadow-lg -translate-y-0.5;
+  }
+
+  /* リストアイテムのホバー */
+  .list-item-interactive {
+    @apply transition-colors duration-150 ease-out;
+  }
+
+  /* フェードインアニメーション */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* スケールインアニメーション */
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out forwards;
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* スライドインアニメーション（右から） */
+  .animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out forwards;
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* パルスエフェクト（録音中など） */
+  .animate-pulse-soft {
+    animation: pulseSoft 2s ease-in-out infinite;
+  }
+
+  @keyframes pulseSoft {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
+  }
+
+  /* ローディングスピナー */
+  .animate-spin-slow {
+    animation: spin 1.5s linear infinite;
+  }
+
+  /* スタッガードアニメーション用 */
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.1s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.2s; }
+  .stagger-5 { animation-delay: 0.25s; }
+}
