@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { PenLine, Moon, Home, Calendar, FileText, Star } from 'lucide-react';
+import { PenLine, Moon, Home, Calendar, FileText, Star, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -12,6 +12,7 @@ const navItems = [
   { href: '/app/calendar', icon: Calendar, label: 'カレンダー' },
   { href: '/app/timeline', icon: FileText, label: 'タイムライン' },
   { href: '/app/wishlist', icon: Star, label: 'ウィッシュリスト' },
+  { href: '/app/stats', icon: BarChart3, label: '統計' },
 ];
 
 export function Sidebar() {

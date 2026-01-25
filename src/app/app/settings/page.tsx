@@ -2,11 +2,19 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { User, Mic, Moon, LogOut, ChevronRight, BookUser, Sliders } from 'lucide-react';
+import { User, Mic, Moon, LogOut, ChevronRight, BookUser, Sliders, Download, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
-const settingsItems = [
+interface SettingsItem {
+  href: string;
+  icon: typeof User;
+  label: string;
+  description: string;
+  danger?: boolean;
+}
+
+const settingsItems: SettingsItem[] = [
   {
     href: '/app/settings/profile',
     icon: User,
@@ -37,6 +45,19 @@ const settingsItems = [
     label: '条件用属性',
     description: 'ウィッシュリストの条件判定用',
   },
+  {
+    href: '/app/settings/export',
+    icon: Download,
+    label: 'データエクスポート',
+    description: 'CSV形式でダウンロード',
+  },
+  {
+    href: '/app/settings/account',
+    icon: Trash2,
+    label: 'アカウント',
+    description: 'アカウント削除',
+    danger: true,
+  },
 ];
 
 export default function SettingsPage() {
@@ -53,11 +74,17 @@ export default function SettingsPage() {
       <div className="space-y-2">
         {settingsItems.map((item) => (
           <Link key={item.href} href={item.href}>
-            <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
+            <Card className={`hover:bg-accent/50 transition-colors cursor-pointer ${
+              item.danger ? 'border-red-200 dark:border-red-900' : ''
+            }`}>
               <CardContent className="flex items-center p-4">
-                <item.icon className="w-5 h-5 text-primary mr-4" />
+                <item.icon className={`w-5 h-5 mr-4 ${
+                  item.danger ? 'text-red-500' : 'text-primary'
+                }`} />
                 <div className="flex-1">
-                  <p className="font-medium">{item.label}</p>
+                  <p className={`font-medium ${item.danger ? 'text-red-600' : ''}`}>
+                    {item.label}
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     {item.description}
                   </p>

@@ -1,0 +1,27 @@
+{
+  "name": "こころのしるべ",
+  "short_name": "こころのしるべ",
+  "description": "日々の感情を記録し、夢をAIで占い、ウィッシュリストで目標を管理。あなたの心の道標となるサービスです。",
+  "start_url": "/app/home",
+  "display": "standalone",
+  "background_color": "#faf6f0",
+  "theme_color": "#a0522d",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["lifestyle", "productivity"],
+  "lang": "ja",
+  "dir": "ltr"
+}
