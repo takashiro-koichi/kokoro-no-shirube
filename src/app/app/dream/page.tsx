@@ -30,6 +30,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { VoiceInput } from '@/components/common/VoiceInput';
 import { DatePicker, parseLocalDate } from '@/components/common/DatePicker';
+import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import type {
   DreamWithKeywords,
   VoiceFormatLevel,
@@ -400,6 +401,14 @@ export default function DreamPage() {
     isDeleting ||
     isExtractingKeywords ||
     isFortuneTelling;
+  const isToday = selectedDate === formatDate(new Date());
+
+  // スワイプナビゲーション
+  const swipeRef = useSwipeNavigation<HTMLDivElement>({
+    onSwipeLeft: () => !isToday && !isProcessing && changeDate(1),
+    onSwipeRight: () => !isProcessing && changeDate(-1),
+    enabled: !isProcessing,
+  });
 
   if (isLoading) {
     return (
@@ -410,7 +419,7 @@ export default function DreamPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div ref={swipeRef} className="space-y-6 max-w-2xl mx-auto">
       {/* 日付選択 */}
       <div className="flex items-center justify-between">
         <Button
