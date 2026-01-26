@@ -51,7 +51,7 @@ function BokehParticles() {
 
       vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
       float pulse = sin(uTime * speed * 2.0) * 0.3 + 0.7;
-      vAlpha = pulse * 0.35;
+      vAlpha = pulse * 0.25;
       gl_PointSize = size * (200.0 / -mvPosition.z) * pulse;
       gl_Position = projectionMatrix * mvPosition;
     }
@@ -64,7 +64,7 @@ function BokehParticles() {
       float dist = distance(gl_PointCoord, vec2(0.5));
       if (dist > 0.5) discard;
       float alpha = smoothstep(0.5, 0.0, dist) * vAlpha;
-      gl_FragColor = vec4(0.9, 0.8, 0.65, alpha);
+      gl_FragColor = vec4(0.95, 0.7, 0.45, alpha);
     }
   `;
 
@@ -87,7 +87,7 @@ function WarmBackground() {
   return (
     <mesh scale={[20, 20, 1]} position={[0, 0, -5]}>
       <planeGeometry />
-      <meshBasicMaterial color="#faf6f0" />
+      <meshBasicMaterial color="#ede5d9" />
     </mesh>
   );
 }
