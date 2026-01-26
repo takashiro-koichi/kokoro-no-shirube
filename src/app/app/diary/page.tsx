@@ -24,6 +24,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { VoiceInput } from '@/components/common/VoiceInput';
+import { DatePicker, parseLocalDate } from '@/components/common/DatePicker';
 import type { Diary, VoiceFormatLevel } from '@/lib/supabase/types';
 
 function formatDate(date: Date): string {
@@ -292,7 +293,15 @@ export default function DiaryPage() {
         >
           <ChevronLeft className="w-5 h-5" />
         </Button>
-        <h1 className="text-xl font-bold">{formatDisplayDate(selectedDate)}</h1>
+        <DatePicker
+          date={parseLocalDate(selectedDate)}
+          onDateChange={(date) => {
+            setSelectedDate(formatDate(date));
+            setSuccess(null);
+          }}
+          disabled={isProcessing}
+          maxDate={new Date()}
+        />
         <Button
           variant="ghost"
           size="icon"
