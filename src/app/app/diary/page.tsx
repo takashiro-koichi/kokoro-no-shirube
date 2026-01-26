@@ -274,7 +274,7 @@ export default function DiaryPage() {
           onChange={(e) => editor.setContent(e.target.value)}
           disabled={isProcessing}
           rows={40}
-          className="resize-none bg-white text-black"
+          className="resize-none bg-white text-black min-h-[600px]"
         />
       </div>
 
