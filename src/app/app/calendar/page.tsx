@@ -11,6 +11,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { Calendar } from '@/components/reflection/Calendar';
 import { DetailPanel } from '@/components/reflection/DetailPanel';
+import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import type { CalendarDayData, TimelineItem } from '@/lib/supabase/types';
 import { emotionTagToEmoji } from '@/lib/utils/emotion';
 
@@ -164,6 +165,33 @@ export default function CalendarPage() {
     setMonth(newMonth);
   };
 
+  // 前月へ移動
+  const goToPreviousMonth = useCallback(() => {
+    if (month === 1) {
+      setYear(year - 1);
+      setMonth(12);
+    } else {
+      setMonth(month - 1);
+    }
+  }, [year, month]);
+
+  // 次月へ移動
+  const goToNextMonth = useCallback(() => {
+    if (month === 12) {
+      setYear(year + 1);
+      setMonth(1);
+    } else {
+      setMonth(month + 1);
+    }
+  }, [year, month]);
+
+  // スワイプナビゲーション
+  const swipeRef = useSwipeNavigation<HTMLDivElement>({
+    onSwipeLeft: goToNextMonth,
+    onSwipeRight: goToPreviousMonth,
+    enabled: !isLoading && !isLoadingDetail,
+  });
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -173,7 +201,7 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
+    <div ref={swipeRef} className="space-y-6 max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold">カレンダー</h1>
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -194,7 +222,7 @@ export default function CalendarPage() {
         </div>
         <div className="flex items-center gap-1">
           <span>●</span>
-          <span>日記</span>
+          <span>日記(感情記録なし)</span>
         </div>
         <div className="flex items-center gap-1">
           <span>🌙</span>

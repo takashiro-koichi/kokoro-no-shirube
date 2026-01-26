@@ -9,8 +9,8 @@ const navItems = [
   { href: '/app/diary', icon: PenLine, label: '日記' },
   { href: '/app/dream', icon: Moon, label: '夢' },
   { href: '/app/home', icon: Home, label: 'ホーム', isCenter: true },
-  { href: '/app/calendar', icon: Calendar, label: '振り返り' },
   { href: '/app/wishlist', icon: Star, label: '願い' },
+  { href: '/app/calendar', icon: Calendar, label: '振り返り' },
 ];
 
 export function BottomNav() {
