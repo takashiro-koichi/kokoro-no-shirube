@@ -77,14 +77,18 @@ export default function DiaryPage() {
     try {
       const supabase = createClient();
 
-      // 設定を取得
-      const settings = await getUserSettings(supabase, user.id);
+      // 設定と日記を並列取得
+      const [settings, diaryData] = await Promise.all([
+        getUserSettings(supabase, user.id),
+        getDiaryByDate(supabase, user.id, selectedDate),
+      ]);
+
+      // 設定を反映
       if (settings) {
         setVoiceFormatLevel(settings.voice_format_level);
       }
 
-      // 日記を取得
-      const diaryData = await getDiaryByDate(supabase, user.id, selectedDate);
+      // 日記を反映
       setDiary(diaryData);
       setContent(diaryData?.content || '');
       setVoiceText('');

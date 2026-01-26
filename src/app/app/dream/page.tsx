@@ -91,23 +91,27 @@ export default function DreamPage() {
     try {
       const supabase = createClient();
 
-      // 設定を取得
-      const settings = await getUserSettings(supabase, user.id);
+      // すべてのデータを並列取得
+      const [settings, glossaryData, limitStatus, dreamData] = await Promise.all([
+        getUserSettings(supabase, user.id),
+        getUserGlossary(supabase, user.id),
+        checkFortuneLimit(supabase, user.id),
+        getDreamByDate(supabase, user.id, selectedDate),
+      ]);
+
+      // 設定を反映
       if (settings) {
         setVoiceFormatLevel(settings.voice_format_level);
         setFortuneStyle(settings.fortune_style);
       }
 
-      // 固有名詞を取得
-      const glossaryData = await getUserGlossary(supabase, user.id);
+      // 固有名詞を反映
       setGlossary(glossaryData);
 
-      // API制限を取得
-      const limitStatus = await checkFortuneLimit(supabase, user.id);
+      // API制限を反映
       setRemainingCount(limitStatus.remainingCount);
 
-      // 夢記録を取得
-      const dreamData = await getDreamByDate(supabase, user.id, selectedDate);
+      // 夢記録を反映
       setDream(dreamData);
       setContent(dreamData?.content || '');
       setKeywords(dreamData?.keywords.map((k) => k.keyword) || []);
