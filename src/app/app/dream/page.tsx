@@ -31,16 +31,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { VoiceInput } from '@/components/common/VoiceInput';
 import { DatePicker, parseLocalDate } from '@/components/common/DatePicker';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
+import { useSharedDate } from '@/hooks/useSharedDate';
 import type {
   DreamWithKeywords,
   VoiceFormatLevel,
   FortuneStyle,
   UserGlossary,
 } from '@/lib/supabase/types';
-
-function formatDate(date: Date): string {
-  return date.toISOString().split('T')[0];
-}
 
 function formatDisplayDate(dateStr: string): string {
   const date = new Date(dateStr);
@@ -56,7 +53,7 @@ const FORTUNE_STYLE_LABELS: Record<FortuneStyle, string> = {
 
 export default function DreamPage() {
   const { user } = useAuth();
-  const [selectedDate, setSelectedDate] = useState(formatDate(new Date()));
+  const { selectedDate, setSelectedDate, changeDate, formatDate } = useSharedDate();
   const [content, setContent] = useState('');
   const [dream, setDream] = useState<DreamWithKeywords | null>(null);
   const [keywords, setKeywords] = useState<string[]>([]);
@@ -130,11 +127,9 @@ export default function DreamPage() {
     loadData();
   }, [loadData]);
 
-  // 日付変更
-  const changeDate = (days: number) => {
-    const date = new Date(selectedDate);
-    date.setDate(date.getDate() + days);
-    setSelectedDate(formatDate(date));
+  // 日付変更（successをクリア）
+  const handleChangeDate = (days: number) => {
+    changeDate(days);
     setSuccess(null);
   };
 
@@ -401,12 +396,13 @@ export default function DreamPage() {
     isDeleting ||
     isExtractingKeywords ||
     isFortuneTelling;
-  const isToday = selectedDate === formatDate(new Date());
+  const todayStr = formatDate(new Date());
+  const isToday = selectedDate === todayStr;
 
   // スワイプナビゲーション
   const swipeRef = useSwipeNavigation<HTMLDivElement>({
-    onSwipeLeft: () => !isToday && !isProcessing && changeDate(1),
-    onSwipeRight: () => !isProcessing && changeDate(-1),
+    onSwipeLeft: () => !isToday && !isProcessing && handleChangeDate(1),
+    onSwipeRight: () => !isProcessing && handleChangeDate(-1),
     enabled: !isProcessing,
   });
 
@@ -425,7 +421,7 @@ export default function DreamPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => changeDate(-1)}
+          onClick={() => handleChangeDate(-1)}
           disabled={isProcessing}
         >
           <ChevronLeft className="w-5 h-5" />
@@ -442,8 +438,8 @@ export default function DreamPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => changeDate(1)}
-          disabled={isProcessing || selectedDate === formatDate(new Date())}
+          onClick={() => handleChangeDate(1)}
+          disabled={isProcessing || isToday}
         >
           <ChevronRight className="w-5 h-5" />
         </Button>
