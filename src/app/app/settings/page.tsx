@@ -71,13 +71,16 @@ export default function SettingsPage() {
     <div className="space-y-6 max-w-lg mx-auto">
       <h1 className="text-2xl font-bold">設定</h1>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {settingsItems.map((item) => (
-          <Link key={item.href} href={item.href}>
-            <Card className={`py-0 hover:bg-accent/50 transition-colors cursor-pointer ${
-              item.danger ? 'border-red-200 dark:border-red-900' : ''
-            }`}>
-              <CardContent className="flex items-center py-3 px-4">
+          <Link key={item.href} href={item.href} className="block">
+            <Card
+              className={`hover:bg-accent/50 transition-colors cursor-pointer ${
+                item.danger ? 'border-red-200 dark:border-red-900' : ''
+              }`}
+              style={{ padding: 0 }}
+            >
+              <CardContent className="flex items-center px-4" style={{ padding: '12px 16px' }}>
                 <item.icon className={`w-5 h-5 mr-4 ${
                   item.danger ? 'text-red-500' : 'text-primary'
                 }`} />
