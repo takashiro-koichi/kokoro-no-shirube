@@ -83,19 +83,21 @@ export default function WishlistPage() {
     try {
       const supabase = createClient();
 
-      // ユーザープロフィールから生年月日を取得
-      const profile = await getUserProfile(supabase, user.id);
+      // すべてのデータを並列取得
+      const [profile, attrMap, data] = await Promise.all([
+        getUserProfile(supabase, user.id),
+        getUserAttributesMap(supabase, user.id),
+        getWishlists(supabase, user.id),
+      ]);
+
+      // ユーザープロフィールから年齢を計算
       const age = profile?.birth_date
         ? calculateAge(profile.birth_date)
         : undefined;
       setUserAge(age);
 
-      // 属性を取得
-      const attrMap = await getUserAttributesMap(supabase, user.id);
+      // 属性を反映
       setAttributesMap(attrMap);
-
-      // ウィッシュリストを取得
-      const data = await getWishlists(supabase, user.id);
 
       // 条件評価を追加
       const withEvaluation = data.map((w) => {
