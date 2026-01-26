@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { TimelineItem as TimelineItemType } from '@/lib/supabase/types';
 import { emotionTagToEmoji } from '@/lib/utils/emotion';
+import { formatCompactDateFromString } from '@/lib/utils/date';
 
 interface TimelineItemCardProps {
   item: TimelineItemType;
@@ -14,12 +15,6 @@ interface TimelineItemCardProps {
 export function TimelineItemCard({ item, onClick }: TimelineItemCardProps) {
   const isDiary = item.type === 'diary';
   const emoji = isDiary ? emotionTagToEmoji(item.emotion_tags) : null;
-
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const days = ['日', '月', '火', '水', '木', '金', '土'];
-    return `${date.getMonth() + 1}/${date.getDate()}（${days[date.getDay()]}）`;
-  };
 
   // 本文のプレビュー（最初の100文字）
   const contentPreview =
@@ -51,7 +46,7 @@ export function TimelineItemCard({ item, onClick }: TimelineItemCardProps) {
           <div className="flex-1 min-w-0">
             {/* ヘッダー */}
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-medium">{formatDate(item.date)}</span>
+              <span className="text-sm font-medium">{formatCompactDateFromString(item.date)}</span>
               <Badge variant={isDiary ? 'secondary' : 'outline'}>
                 {isDiary ? '日記' : '夢記録'}
               </Badge>

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ja } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { formatDisplayDate } from '@/lib/utils/date';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -37,12 +38,6 @@ export function DatePicker({
       onDateChange(selectedDate);
       setOpen(false);
     }
-  };
-
-  // 日本語フォーマット: 2025年1月26日（日）
-  const formatDisplayDate = (date: Date): string => {
-    const days = ['日', '月', '火', '水', '木', '金', '土'];
-    return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日（${days[date.getDay()]}）`;
   };
 
   return (

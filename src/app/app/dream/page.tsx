@@ -39,12 +39,6 @@ import type {
   UserGlossary,
 } from '@/lib/supabase/types';
 
-function formatDisplayDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const days = ['日', '月', '火', '水', '木', '金', '土'];
-  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日（${days[date.getDay()]}）`;
-}
-
 const FORTUNE_STYLE_LABELS: Record<FortuneStyle, string> = {
   jung: 'ユング派',
   freud: 'フロイト派',

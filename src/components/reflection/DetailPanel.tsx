@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { TimelineItem } from '@/lib/supabase/types';
 import { emotionTagToEmoji } from '@/lib/utils/emotion';
+import { formatDisplayDateFromString } from '@/lib/utils/date';
 
 interface DetailPanelProps {
   open: boolean;
@@ -36,12 +37,6 @@ export function DetailPanel({ open, onOpenChange, item }: DetailPanelProps) {
     onOpenChange(false);
   };
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const days = ['日', '月', '火', '水', '木', '金', '土'];
-    return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日（${days[date.getDay()]}）`;
-  };
-
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="overflow-y-auto">
@@ -54,7 +49,7 @@ export function DetailPanel({ open, onOpenChange, item }: DetailPanelProps) {
             )}
             <SheetTitle>{isDiary ? '日記' : '夢記録'}</SheetTitle>
           </div>
-          <SheetDescription>{formatDate(item.date)}</SheetDescription>
+          <SheetDescription>{formatDisplayDateFromString(item.date)}</SheetDescription>
         </SheetHeader>
 
         <div className="space-y-4 p-4">

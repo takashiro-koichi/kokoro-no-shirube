@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 
 const STORAGE_KEY = 'kokoro-selected-date';
 
@@ -12,32 +12,49 @@ function getTodayString(): string {
   return formatDate(new Date());
 }
 
+// localStorageの変更を監視するstore
+function subscribeToStorage(callback: () => void) {
+  window.addEventListener('storage', callback);
+  return () => window.removeEventListener('storage', callback);
+}
+
+function getSnapshot(): string {
+  return localStorage.getItem(STORAGE_KEY) || getTodayString();
+}
+
+function getServerSnapshot(): string {
+  return getTodayString();
+}
+
 export function useSharedDate() {
-  const [selectedDate, setSelectedDate] = useState<string>(getTodayString);
-  const [isHydrated, setIsHydrated] = useState(false);
+  // useSyncExternalStoreでlocalStorageを監視（SSR安全）
+  const storedDate = useSyncExternalStore(
+    subscribeToStorage,
+    getSnapshot,
+    getServerSnapshot
+  );
 
-  // クライアントサイドでlocalStorageから読み込み
+  const [selectedDate, setSelectedDateState] = useState<string>(storedDate);
+
+  // storedDateが変わったら同期
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      setSelectedDate(stored);
-    }
-    setIsHydrated(true);
+    setSelectedDateState(storedDate);
+  }, [storedDate]);
+
+  // localStorageに保存し、状態も更新
+  const setSelectedDate = useCallback((date: string) => {
+    localStorage.setItem(STORAGE_KEY, date);
+    setSelectedDateState(date);
   }, []);
-
-  // localStorageに保存
-  useEffect(() => {
-    if (isHydrated) {
-      localStorage.setItem(STORAGE_KEY, selectedDate);
-    }
-  }, [selectedDate, isHydrated]);
 
   // 日付変更関数
   const changeDate = useCallback((days: number) => {
-    setSelectedDate((prev) => {
+    setSelectedDateState((prev) => {
       const date = new Date(prev);
       date.setDate(date.getDate() + days);
-      return formatDate(date);
+      const newDate = formatDate(date);
+      localStorage.setItem(STORAGE_KEY, newDate);
+      return newDate;
     });
   }, []);
 

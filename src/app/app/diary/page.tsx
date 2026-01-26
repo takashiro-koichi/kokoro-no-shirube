@@ -36,12 +36,6 @@ import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { useSharedDate } from '@/hooks/useSharedDate';
 import type { Diary, VoiceFormatLevel } from '@/lib/supabase/types';
 
-function formatDisplayDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const days = ['日', '月', '火', '水', '木', '金', '土'];
-  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日（${days[date.getDay()]}）`;
-}
-
 export default function DiaryPage() {
   const { user } = useAuth();
   const { selectedDate, setSelectedDate, changeDate, formatDate } = useSharedDate();

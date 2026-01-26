@@ -54,7 +54,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const parsed = JSON.parse(jsonMatch[0]);
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch {
+      console.error('JSON parse error:', jsonMatch[0]);
+      return NextResponse.json(
+        { error: 'Failed to parse AI response JSON' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       keywords: parsed.keywords || [],
