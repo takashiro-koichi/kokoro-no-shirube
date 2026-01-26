@@ -132,7 +132,12 @@ gh pr create -R takashiro-koichi/kokoro-no-shirube --title "タイトル" --body
 
 # 既存PRの更新
 gh pr edit <PR番号> -R takashiro-koichi/kokoro-no-shirube --title "新タイトル" --body "新本文"
+
+# PRマージ後にブランチを削除
+git branch -d <ブランチ名>
 ```
+
+**PRマージ後は、不要になったブランチを削除すること。**
 
 ### 9. ブランチ運用ルール
 
