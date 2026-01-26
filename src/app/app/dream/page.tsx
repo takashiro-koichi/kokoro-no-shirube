@@ -354,7 +354,7 @@ export default function DreamPage() {
           onChange={(e) => editor.setContent(e.target.value)}
           disabled={isProcessing}
           rows={30}
-          className="resize-none bg-white text-black"
+          className="resize-none bg-white text-black min-h-[500px]"
         />
       </div>
 
