@@ -29,6 +29,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { VoiceInput } from '@/components/common/VoiceInput';
+import { DatePicker, parseLocalDate } from '@/components/common/DatePicker';
 import type {
   DreamWithKeywords,
   VoiceFormatLevel,
@@ -416,7 +417,15 @@ export default function DreamPage() {
         >
           <ChevronLeft className="w-5 h-5" />
         </Button>
-        <h1 className="text-xl font-bold">{formatDisplayDate(selectedDate)}</h1>
+        <DatePicker
+          date={parseLocalDate(selectedDate)}
+          onDateChange={(date) => {
+            setSelectedDate(formatDate(date));
+            setSuccess(null);
+          }}
+          disabled={isProcessing}
+          maxDate={new Date()}
+        />
         <Button
           variant="ghost"
           size="icon"

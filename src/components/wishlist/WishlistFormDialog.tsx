@@ -46,10 +46,10 @@ export function WishlistFormDialog({
   const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [condition1Attribute, setCondition1Attribute] = useState<string>('');
+  const [condition1Attribute, setCondition1Attribute] = useState<string>('none');
   const [condition1Operator, setCondition1Operator] = useState<string>('gte');
   const [condition1Value, setCondition1Value] = useState<string>('');
-  const [condition2Attribute, setCondition2Attribute] = useState<string>('');
+  const [condition2Attribute, setCondition2Attribute] = useState<string>('none');
   const [condition2Operator, setCondition2Operator] = useState<string>('gte');
   const [condition2Value, setCondition2Value] = useState<string>('');
   const [deadline, setDeadline] = useState<string>('');
@@ -62,14 +62,14 @@ export function WishlistFormDialog({
       if (wishlist) {
         setTitle(wishlist.title);
         setDescription(wishlist.description || '');
-        setCondition1Attribute(wishlist.condition1_attribute || '');
+        setCondition1Attribute(wishlist.condition1_attribute || 'none');
         setCondition1Operator(wishlist.condition1_operator || 'gte');
         setCondition1Value(
           wishlist.condition1_value !== null
             ? String(wishlist.condition1_value)
             : ''
         );
-        setCondition2Attribute(wishlist.condition2_attribute || '');
+        setCondition2Attribute(wishlist.condition2_attribute || 'none');
         setCondition2Operator(wishlist.condition2_operator || 'gte');
         setCondition2Value(
           wishlist.condition2_value !== null
@@ -80,10 +80,10 @@ export function WishlistFormDialog({
       } else {
         setTitle('');
         setDescription('');
-        setCondition1Attribute('');
+        setCondition1Attribute('none');
         setCondition1Operator('gte');
         setCondition1Value('');
-        setCondition2Attribute('');
+        setCondition2Attribute('none');
         setCondition2Operator('gte');
         setCondition2Value('');
         setDeadline('');
@@ -101,17 +101,20 @@ export function WishlistFormDialog({
     try {
       const supabase = createClient();
 
+      const cond1Valid = condition1Attribute && condition1Attribute !== 'none';
+      const cond2Valid = condition2Attribute && condition2Attribute !== 'none';
+
       const data = {
         title: title.trim(),
         description: description.trim() || null,
-        condition1_attribute: condition1Attribute || null,
-        condition1_operator: condition1Attribute ? condition1Operator : null,
-        condition1_value: condition1Attribute && condition1Value
+        condition1_attribute: cond1Valid ? condition1Attribute : null,
+        condition1_operator: cond1Valid ? condition1Operator : null,
+        condition1_value: cond1Valid && condition1Value
           ? Number(condition1Value)
           : null,
-        condition2_attribute: condition2Attribute || null,
-        condition2_operator: condition2Attribute ? condition2Operator : null,
-        condition2_value: condition2Attribute && condition2Value
+        condition2_attribute: cond2Valid ? condition2Attribute : null,
+        condition2_operator: cond2Valid ? condition2Operator : null,
+        condition2_value: cond2Valid && condition2Value
           ? Number(condition2Value)
           : null,
         deadline: deadline || null,
@@ -191,7 +194,7 @@ export function WishlistFormDialog({
                   <SelectValue placeholder="属性を選択" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">なし</SelectItem>
+                  <SelectItem value="none">なし</SelectItem>
                   {conditionableAttributes.map((attr) => (
                     <SelectItem key={attr.key} value={attr.key}>
                       {attr.label}
@@ -199,7 +202,7 @@ export function WishlistFormDialog({
                   ))}
                 </SelectContent>
               </Select>
-              {condition1Attribute && (
+              {condition1Attribute && condition1Attribute !== 'none' && (
                 <>
                   <Select
                     value={condition1Operator}
@@ -237,7 +240,7 @@ export function WishlistFormDialog({
           </div>
 
           {/* 条件2（条件1が設定されている場合のみ表示） */}
-          {condition1Attribute && (
+          {condition1Attribute && condition1Attribute !== 'none' && (
             <div className="space-y-2">
               <Label>実施可能条件 2（OR）</Label>
               <div className="flex gap-2">
@@ -250,7 +253,7 @@ export function WishlistFormDialog({
                     <SelectValue placeholder="属性を選択" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">なし</SelectItem>
+                    <SelectItem value="none">なし</SelectItem>
                     {conditionableAttributes.map((attr) => (
                       <SelectItem key={attr.key} value={attr.key}>
                         {attr.label}
@@ -258,7 +261,7 @@ export function WishlistFormDialog({
                     ))}
                   </SelectContent>
                 </Select>
-                {condition2Attribute && (
+                {condition2Attribute && condition2Attribute !== 'none' && (
                   <>
                     <Select
                       value={condition2Operator}
