@@ -56,7 +56,13 @@ export async function POST(request: NextRequest) {
       throw new Error('JSONの抽出に失敗しました');
     }
 
-    const result = JSON.parse(jsonMatch[0]);
+    let result;
+    try {
+      result = JSON.parse(jsonMatch[0]);
+    } catch {
+      console.error('JSON parse error:', jsonMatch[0]);
+      throw new Error('AIレスポンスのJSONパースに失敗しました');
+    }
 
     return NextResponse.json({
       summary: result.summary || '',

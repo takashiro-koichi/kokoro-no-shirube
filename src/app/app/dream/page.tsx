@@ -32,18 +32,13 @@ import { VoiceInput } from '@/components/common/VoiceInput';
 import { DatePicker, parseLocalDate } from '@/components/common/DatePicker';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { useSharedDate } from '@/hooks/useSharedDate';
+import { useContentEditor } from '@/hooks/useContentEditor';
 import type {
   DreamWithKeywords,
   VoiceFormatLevel,
   FortuneStyle,
   UserGlossary,
 } from '@/lib/supabase/types';
-
-function formatDisplayDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const days = ['日', '月', '火', '水', '木', '金', '土'];
-  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日（${days[date.getDay()]}）`;
-}
 
 const FORTUNE_STYLE_LABELS: Record<FortuneStyle, string> = {
   jung: 'ユング派',
@@ -54,7 +49,6 @@ const FORTUNE_STYLE_LABELS: Record<FortuneStyle, string> = {
 export default function DreamPage() {
   const { user } = useAuth();
   const { selectedDate, setSelectedDate, changeDate, formatDate } = useSharedDate();
-  const [content, setContent] = useState('');
   const [dream, setDream] = useState<DreamWithKeywords | null>(null);
   const [keywords, setKeywords] = useState<string[]>([]);
   const [voiceFormatLevel, setVoiceFormatLevel] =
@@ -63,20 +57,14 @@ export default function DreamPage() {
   const [glossary, setGlossary] = useState<UserGlossary[]>([]);
   const [remainingCount, setRemainingCount] = useState<number>(20);
 
-  // 音声入力用
-  const [voiceText, setVoiceText] = useState('');
-
-  // 履歴（元に戻す用）
-  const [contentHistory, setContentHistory] = useState<string[]>([]);
+  // コンテンツエディタフック
+  const editor = useContentEditor({ voiceFormatLevel });
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isFormatting, setIsFormatting] = useState(false);
-  const [isFormattingVoice, setIsFormattingVoice] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExtractingKeywords, setIsExtractingKeywords] = useState(false);
   const [isFortuneTelling, setIsFortuneTelling] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   // 夢記録と設定を読み込む
@@ -84,7 +72,7 @@ export default function DreamPage() {
     if (!user) return;
 
     setIsLoading(true);
-    setError(null);
+    editor.setError(null);
 
     try {
       const supabase = createClient();
@@ -111,17 +99,15 @@ export default function DreamPage() {
 
       // 夢記録を反映
       setDream(dreamData);
-      setContent(dreamData?.content || '');
+      editor.reset(dreamData?.content || '');
       setKeywords(dreamData?.keywords.map((k) => k.keyword) || []);
-      setVoiceText('');
-      setContentHistory([]);
     } catch (err) {
       console.error('Failed to load dream:', err);
-      setError('読み込みに失敗しました');
+      editor.setError('読み込みに失敗しました');
     } finally {
       setIsLoading(false);
     }
-  }, [user, selectedDate]);
+  }, [user, selectedDate, editor]);
 
   useEffect(() => {
     loadData();
@@ -133,105 +119,18 @@ export default function DreamPage() {
     setSuccess(null);
   };
 
-  // 音声入力のトランスクリプト追加
-  const handleTranscript = (text: string) => {
-    setVoiceText((prev) => prev + text);
-  };
-
-  // 履歴に保存してからコンテンツを更新
-  const updateContentWithHistory = (newContent: string) => {
-    setContentHistory((prev) => [...prev, content]);
-    setContent(newContent);
-  };
-
-  // 元に戻す
-  const handleUndo = () => {
-    if (contentHistory.length === 0) return;
-    const previousContent = contentHistory[contentHistory.length - 1];
-    setContentHistory((prev) => prev.slice(0, -1));
-    setContent(previousContent);
-  };
-
-  // 全文整形
-  const handleFormatAll = async () => {
-    if (!content.trim()) return;
-
-    setIsFormatting(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/diary/format', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: content, level: voiceFormatLevel }),
-      });
-
-      if (!response.ok) {
-        throw new Error('整形に失敗しました');
-      }
-
-      const data = await response.json();
-      updateContentWithHistory(data.formatted);
-    } catch (err) {
-      console.error('Format error:', err);
-      setError('整形に失敗しました');
-    } finally {
-      setIsFormatting(false);
-    }
-  };
-
-  // 整形して追記
-  const handleFormatAndAdd = async () => {
-    if (!voiceText.trim()) return;
-
-    setIsFormattingVoice(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/diary/format', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: voiceText, level: voiceFormatLevel }),
-      });
-
-      if (!response.ok) {
-        throw new Error('整形に失敗しました');
-      }
-
-      const data = await response.json();
-      const newContent = content
-        ? content + '\n\n' + data.formatted
-        : data.formatted;
-      updateContentWithHistory(newContent);
-      setVoiceText('');
-    } catch (err) {
-      console.error('Format error:', err);
-      setError('整形に失敗しました');
-    } finally {
-      setIsFormattingVoice(false);
-    }
-  };
-
-  // そのまま追記
-  const handleAddWithoutFormat = () => {
-    if (!voiceText.trim()) return;
-    const newContent = content ? content + '\n\n' + voiceText : voiceText;
-    updateContentWithHistory(newContent);
-    setVoiceText('');
-  };
-
   // キーワード抽出
   const handleExtractKeywords = async () => {
-    if (!content.trim()) return;
+    if (!editor.content.trim()) return;
 
     setIsExtractingKeywords(true);
-    setError(null);
+    editor.setError(null);
 
     try {
       const response = await fetch('/api/dream/keywords', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content: editor.content }),
       });
 
       if (!response.ok) {
@@ -242,7 +141,7 @@ export default function DreamPage() {
       setKeywords(data.keywords || []);
     } catch (err) {
       console.error('Keywords error:', err);
-      setError('キーワード抽出に失敗しました');
+      editor.setError('キーワード抽出に失敗しました');
     } finally {
       setIsExtractingKeywords(false);
     }
@@ -255,10 +154,10 @@ export default function DreamPage() {
 
   // 保存
   const handleSave = async () => {
-    if (!user || !content.trim()) return;
+    if (!user || !editor.content.trim()) return;
 
     setIsSaving(true);
-    setError(null);
+    editor.setError(null);
     setSuccess(null);
 
     try {
@@ -269,7 +168,7 @@ export default function DreamPage() {
       if (dream) {
         // 更新
         const updated = await updateDream(supabase, dream.id, {
-          content,
+          content: editor.content,
           content_updated_at: new Date().toISOString(),
         });
         savedDream = { ...updated, keywords: dream.keywords };
@@ -278,7 +177,7 @@ export default function DreamPage() {
         const created = await createDream(supabase, {
           user_id: user.id,
           date: selectedDate,
-          content,
+          content: editor.content,
         });
         savedDream = { ...created, keywords: [] };
       }
@@ -295,10 +194,10 @@ export default function DreamPage() {
 
       setDream(savedDream);
       setSuccess('保存しました');
-      setContentHistory([]);
+      editor.clearHistory();
     } catch (err) {
       console.error('Save error:', err);
-      setError('保存に失敗しました');
+      editor.setError('保存に失敗しました');
     } finally {
       setIsSaving(false);
     }
@@ -306,25 +205,25 @@ export default function DreamPage() {
 
   // 夢占い実行
   const handleFortuneTelling = async () => {
-    if (!dream || !content.trim()) {
-      setError('まず夢の内容を保存してください');
+    if (!dream || !editor.content.trim()) {
+      editor.setError('まず夢の内容を保存してください');
       return;
     }
 
     if (remainingCount <= 0) {
-      setError('本日の夢占い回数上限（20回）に達しました');
+      editor.setError('本日の夢占い回数上限（20回）に達しました');
       return;
     }
 
     setIsFortuneTelling(true);
-    setError(null);
+    editor.setError(null);
 
     try {
       const response = await fetch('/api/dream/fortune', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          content,
+          content: editor.content,
           keywords,
           style: fortuneStyle,
           glossary: glossary.map((g) => ({
@@ -358,7 +257,7 @@ export default function DreamPage() {
       setSuccess('夢占いが完了しました');
     } catch (err) {
       console.error('Fortune telling error:', err);
-      setError(err instanceof Error ? err.message : '夢占いに失敗しました');
+      editor.setError(err instanceof Error ? err.message : '夢占いに失敗しました');
     } finally {
       setIsFortuneTelling(false);
     }
@@ -371,19 +270,18 @@ export default function DreamPage() {
     if (!confirm('この夢記録を削除しますか？')) return;
 
     setIsDeleting(true);
-    setError(null);
+    editor.setError(null);
 
     try {
       const supabase = createClient();
       await deleteDream(supabase, dream.id);
       setDream(null);
-      setContent('');
+      editor.reset();
       setKeywords([]);
-      setContentHistory([]);
       setSuccess('削除しました');
     } catch (err) {
       console.error('Delete error:', err);
-      setError('削除に失敗しました');
+      editor.setError('削除に失敗しました');
     } finally {
       setIsDeleting(false);
     }
@@ -391,8 +289,8 @@ export default function DreamPage() {
 
   const isProcessing =
     isSaving ||
-    isFormatting ||
-    isFormattingVoice ||
+    editor.isFormatting ||
+    editor.isFormattingVoice ||
     isDeleting ||
     isExtractingKeywords ||
     isFortuneTelling;
@@ -451,8 +349,8 @@ export default function DreamPage() {
         <Textarea
           id="content"
           placeholder="見た夢を記録しましょう..."
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
+          value={editor.content}
+          onChange={(e) => editor.setContent(e.target.value)}
           disabled={isProcessing}
           rows={30}
           className="resize-none bg-white text-black"
@@ -464,20 +362,20 @@ export default function DreamPage() {
         <CardContent className="pt-4 space-y-3">
           <div className="flex items-center justify-between">
             <Label>音声入力</Label>
-            <VoiceInput onTranscript={handleTranscript} disabled={isProcessing} />
+            <VoiceInput onTranscript={editor.handleTranscript} disabled={isProcessing} />
           </div>
-          {voiceText && (
+          {editor.voiceText && (
             <>
               <div className="p-3 bg-muted rounded-md">
-                <p className="text-sm whitespace-pre-wrap">{voiceText}</p>
+                <p className="text-sm whitespace-pre-wrap">{editor.voiceText}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button
                   size="sm"
-                  onClick={handleFormatAndAdd}
+                  onClick={editor.handleFormatAndAdd}
                   disabled={isProcessing}
                 >
-                  {isFormattingVoice ? (
+                  {editor.isFormattingVoice ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   ) : (
                     <Wand2 className="w-4 h-4 mr-2" />
@@ -487,7 +385,7 @@ export default function DreamPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={handleAddWithoutFormat}
+                  onClick={editor.handleAddWithoutFormat}
                   disabled={isProcessing}
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -496,7 +394,7 @@ export default function DreamPage() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => setVoiceText('')}
+                  onClick={() => editor.setVoiceText('')}
                   disabled={isProcessing}
                 >
                   クリア
@@ -516,7 +414,7 @@ export default function DreamPage() {
               size="sm"
               variant="outline"
               onClick={handleExtractKeywords}
-              disabled={isProcessing || !content.trim()}
+              disabled={isProcessing || !editor.content.trim()}
             >
               {isExtractingKeywords ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -553,20 +451,20 @@ export default function DreamPage() {
       <div className="flex flex-wrap gap-2">
         <Button
           variant="outline"
-          onClick={handleFormatAll}
-          disabled={isProcessing || !content.trim()}
+          onClick={editor.handleFormatAll}
+          disabled={isProcessing || !editor.content.trim()}
         >
-          {isFormatting ? (
+          {editor.isFormatting ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
           ) : (
             <Wand2 className="w-4 h-4 mr-2" />
           )}
           全文整形
         </Button>
-        {contentHistory.length > 0 && (
+        {editor.canUndo && (
           <Button
             variant="outline"
-            onClick={handleUndo}
+            onClick={editor.handleUndo}
             disabled={isProcessing}
           >
             <Undo2 className="w-4 h-4 mr-2" />
@@ -589,14 +487,14 @@ export default function DreamPage() {
             削除
           </Button>
         )}
-        <Button onClick={handleSave} disabled={isProcessing || !content.trim()}>
+        <Button onClick={handleSave} disabled={isProcessing || !editor.content.trim()}>
           {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
           {isSaving ? '保存中...' : '保存'}
         </Button>
       </div>
 
       {/* メッセージ */}
-      {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+      {editor.error && <p className="text-red-500 text-sm text-center">{editor.error}</p>}
       {success && (
         <p className="text-green-600 text-sm text-center">{success}</p>
       )}

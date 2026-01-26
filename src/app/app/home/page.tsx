@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Wishlist } from '@/lib/supabase/types';
 import { emotionTagToEmoji } from '@/lib/utils/emotion';
+import { formatDisplayDate, toDateString } from '@/lib/utils/date';
 
 // 時間帯に応じた挨拶
 function getGreeting(): string {
@@ -23,12 +24,6 @@ function getGreeting(): string {
   if (hour < 12) return 'おはようございます';
   if (hour < 18) return 'こんにちは';
   return 'こんばんは';
-}
-
-// 日付フォーマット
-function formatDate(date: Date): string {
-  const days = ['日', '月', '火', '水', '木', '金', '土'];
-  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日（${days[date.getDay()]}）`;
 }
 
 // 今週の日付を取得（日曜始まり）
@@ -44,11 +39,6 @@ function getWeekDates(): Date[] {
   }
 
   return dates;
-}
-
-// 日付を YYYY-MM-DD 形式に変換
-function toDateString(date: Date): string {
-  return date.toISOString().split('T')[0];
 }
 
 interface WeekRecord {
@@ -154,7 +144,7 @@ export default function HomePage() {
           {getGreeting()}
           {nickname && `、${nickname}さん`}
         </h1>
-        <p className="text-muted-foreground mt-1">{formatDate(today)}</p>
+        <p className="text-muted-foreground mt-1">{formatDisplayDate(today)}</p>
       </div>
 
       {/* 今日の記録 */}
