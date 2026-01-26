@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { createWishlist, updateWishlist } from '@/lib/supabase/queries';
 import { useAuth } from '@/contexts/AuthContext';
@@ -146,7 +146,7 @@ export function WishlistFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto bg-white">
         <DialogHeader>
           <DialogTitle>
             {wishlist ? 'ウィッシュを編集' : '新しいウィッシュ'}
@@ -302,13 +302,28 @@ export function WishlistFormDialog({
           {/* 目標期限 */}
           <div className="space-y-2">
             <Label htmlFor="deadline">目標期限</Label>
-            <Input
-              id="deadline"
-              type="date"
-              value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
-              disabled={isSaving}
-            />
+            <div className="flex gap-2">
+              <Input
+                id="deadline"
+                type="date"
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+                disabled={isSaving}
+                className="flex-1"
+              />
+              {deadline && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setDeadline('')}
+                  disabled={isSaving}
+                  title="期限をクリア"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* エラー */}

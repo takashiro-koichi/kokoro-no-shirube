@@ -669,6 +669,26 @@ export async function achieveWishlist(
   return data;
 }
 
+// ウィッシュリスト達成取り消し
+export async function unachieveWishlist(
+  supabase: SupabaseClient,
+  wishlistId: string,
+  newStatus: 'pending' | 'achievable' = 'pending'
+): Promise<Wishlist> {
+  const { data, error } = await supabase
+    .from('wishlists')
+    .update({
+      status: newStatus,
+      achieved_at: null,
+    })
+    .eq('id', wishlistId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
 // =====================================
 // 条件評価ロジック
 // =====================================
