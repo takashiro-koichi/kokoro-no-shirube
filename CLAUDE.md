@@ -134,6 +134,27 @@ gh pr create -R takashiro-koichi/kokoro-no-shirube --title "タイトル" --body
 gh pr edit <PR番号> -R takashiro-koichi/kokoro-no-shirube --title "新タイトル" --body "新本文"
 ```
 
+### 9. ブランチ運用ルール
+
+**新機能開発を開始する前に、必ずmainブランチを最新化し、適切な名前のブランチを作成すること。**
+
+```bash
+# 1. mainブランチに切り替えて最新化
+git checkout main
+git pull origin main
+
+# 2. 開発用ブランチを作成
+git checkout -b <ブランチ名>
+```
+
+**ブランチ命名規則:**
+| 種類 | 形式 | 例 |
+|------|------|-----|
+| 新機能 | `feature/<機能名>` | `feature/dark-mode` |
+| バグ修正 | `fix/<修正内容>` | `fix/login-error` |
+| ドキュメント | `docs/<内容>` | `docs/api-guide` |
+| リファクタリング | `refactor/<対象>` | `refactor/auth-flow` |
+
 ---
 
 ## 技術スタック
