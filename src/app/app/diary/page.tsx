@@ -34,29 +34,23 @@ import { VoiceInput } from '@/components/common/VoiceInput';
 import { DatePicker, parseLocalDate } from '@/components/common/DatePicker';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { useSharedDate } from '@/hooks/useSharedDate';
+import { useContentEditor } from '@/hooks/useContentEditor';
 import type { Diary, VoiceFormatLevel } from '@/lib/supabase/types';
 
 export default function DiaryPage() {
   const { user } = useAuth();
   const { selectedDate, setSelectedDate, changeDate, formatDate } = useSharedDate();
-  const [content, setContent] = useState('');
   const [diary, setDiary] = useState<Diary | null>(null);
   const [voiceFormatLevel, setVoiceFormatLevel] =
     useState<VoiceFormatLevel>('thorough');
 
-  // 音声入力用
-  const [voiceText, setVoiceText] = useState('');
-
-  // 履歴（元に戻す用）
-  const [contentHistory, setContentHistory] = useState<string[]>([]);
+  // コンテンツエディタフック
+  const editor = useContentEditor({ voiceFormatLevel });
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isFormatting, setIsFormatting] = useState(false);
-  const [isFormattingVoice, setIsFormattingVoice] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingSummary, setIsUpdatingSummary] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   // 日記と設定を読み込む
@@ -64,7 +58,7 @@ export default function DiaryPage() {
     if (!user) return;
 
     setIsLoading(true);
-    setError(null);
+    editor.setError(null);
 
     try {
       const supabase = createClient();
@@ -82,16 +76,14 @@ export default function DiaryPage() {
 
       // 日記を反映
       setDiary(diaryData);
-      setContent(diaryData?.content || '');
-      setVoiceText('');
-      setContentHistory([]);
+      editor.reset(diaryData?.content || '');
     } catch (err) {
       console.error('Failed to load diary:', err);
-      setError('読み込みに失敗しました');
+      editor.setError('読み込みに失敗しました');
     } finally {
       setIsLoading(false);
     }
-  }, [user, selectedDate]);
+  }, [user, selectedDate, editor]);
 
   useEffect(() => {
     loadData();
@@ -103,99 +95,12 @@ export default function DiaryPage() {
     setSuccess(null);
   };
 
-  // 音声入力のトランスクリプト追加（音声テキストエリアに追加）
-  const handleTranscript = (text: string) => {
-    setVoiceText((prev) => prev + text);
-  };
-
-  // 履歴に保存してからコンテンツを更新
-  const updateContentWithHistory = (newContent: string) => {
-    setContentHistory((prev) => [...prev, content]);
-    setContent(newContent);
-  };
-
-  // 元に戻す
-  const handleUndo = () => {
-    if (contentHistory.length === 0) return;
-    const previousContent = contentHistory[contentHistory.length - 1];
-    setContentHistory((prev) => prev.slice(0, -1));
-    setContent(previousContent);
-  };
-
-  // 全文整形
-  const handleFormatAll = async () => {
-    if (!content.trim()) return;
-
-    setIsFormatting(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/diary/format', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: content, level: voiceFormatLevel }),
-      });
-
-      if (!response.ok) {
-        throw new Error('整形に失敗しました');
-      }
-
-      const data = await response.json();
-      updateContentWithHistory(data.formatted);
-    } catch (err) {
-      console.error('Format error:', err);
-      setError('整形に失敗しました');
-    } finally {
-      setIsFormatting(false);
-    }
-  };
-
-  // 整形して追記
-  const handleFormatAndAdd = async () => {
-    if (!voiceText.trim()) return;
-
-    setIsFormattingVoice(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/diary/format', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: voiceText, level: voiceFormatLevel }),
-      });
-
-      if (!response.ok) {
-        throw new Error('整形に失敗しました');
-      }
-
-      const data = await response.json();
-      const newContent = content
-        ? content + '\n\n' + data.formatted
-        : data.formatted;
-      updateContentWithHistory(newContent);
-      setVoiceText('');
-    } catch (err) {
-      console.error('Format error:', err);
-      setError('整形に失敗しました');
-    } finally {
-      setIsFormattingVoice(false);
-    }
-  };
-
-  // そのまま追記（整形なし）
-  const handleAddWithoutFormat = () => {
-    if (!voiceText.trim()) return;
-    const newContent = content ? content + '\n\n' + voiceText : voiceText;
-    updateContentWithHistory(newContent);
-    setVoiceText('');
-  };
-
   // 保存
   const handleSave = async () => {
-    if (!user || !content.trim()) return;
+    if (!user || !editor.content.trim()) return;
 
     setIsSaving(true);
-    setError(null);
+    editor.setError(null);
     setSuccess(null);
 
     try {
@@ -206,7 +111,7 @@ export default function DiaryPage() {
       if (diary) {
         // 更新
         savedDiary = await updateDiary(supabase, diary.id, {
-          content,
+          content: editor.content,
           content_updated_at: new Date().toISOString(),
         });
       } else {
@@ -214,7 +119,7 @@ export default function DiaryPage() {
         savedDiary = await createDiary(supabase, {
           user_id: user.id,
           date: selectedDate,
-          content,
+          content: editor.content,
         });
       }
 
@@ -223,7 +128,7 @@ export default function DiaryPage() {
         const analyzeResponse = await fetch('/api/diary/analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content }),
+          body: JSON.stringify({ content: editor.content }),
         });
 
         if (analyzeResponse.ok) {
@@ -240,10 +145,10 @@ export default function DiaryPage() {
 
       setDiary(savedDiary);
       setSuccess('保存しました');
-      setContentHistory([]); // 保存後は履歴をクリア
+      editor.clearHistory(); // 保存後は履歴をクリア
     } catch (err) {
       console.error('Save error:', err);
-      setError('保存に失敗しました');
+      editor.setError('保存に失敗しました');
     } finally {
       setIsSaving(false);
     }
@@ -256,18 +161,17 @@ export default function DiaryPage() {
     if (!confirm('この日記を削除しますか？')) return;
 
     setIsDeleting(true);
-    setError(null);
+    editor.setError(null);
 
     try {
       const supabase = createClient();
       await deleteDiary(supabase, diary.id);
       setDiary(null);
-      setContent('');
-      setContentHistory([]);
+      editor.reset();
       setSuccess('削除しました');
     } catch (err) {
       console.error('Delete error:', err);
-      setError('削除に失敗しました');
+      editor.setError('削除に失敗しました');
     } finally {
       setIsDeleting(false);
     }
@@ -275,10 +179,10 @@ export default function DiaryPage() {
 
   // 要約更新
   const handleUpdateSummary = async () => {
-    if (!diary || !content.trim()) return;
+    if (!diary || !editor.content.trim()) return;
 
     setIsUpdatingSummary(true);
-    setError(null);
+    editor.setError(null);
     setSuccess(null);
 
     try {
@@ -287,7 +191,7 @@ export default function DiaryPage() {
       const analyzeResponse = await fetch('/api/diary/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content: editor.content }),
       });
 
       if (!analyzeResponse.ok) {
@@ -304,13 +208,13 @@ export default function DiaryPage() {
       setSuccess('要約を更新しました');
     } catch (err) {
       console.error('Update summary error:', err);
-      setError('要約の更新に失敗しました');
+      editor.setError('要約の更新に失敗しました');
     } finally {
       setIsUpdatingSummary(false);
     }
   };
 
-  const isProcessing = isSaving || isFormatting || isFormattingVoice || isDeleting || isUpdatingSummary;
+  const isProcessing = isSaving || editor.isFormatting || editor.isFormattingVoice || isDeleting || isUpdatingSummary;
   const isToday = selectedDate === formatDate(new Date());
 
   // スワイプナビゲーション
@@ -365,8 +269,8 @@ export default function DiaryPage() {
         <Textarea
           id="content"
           placeholder="今日あったことを書いてみましょう..."
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
+          value={editor.content}
+          onChange={(e) => editor.setContent(e.target.value)}
           disabled={isProcessing}
           rows={40}
           className="resize-none bg-white text-black"
@@ -378,20 +282,20 @@ export default function DiaryPage() {
         <CardContent className="pt-4 space-y-3">
           <div className="flex items-center justify-between">
             <Label>音声入力</Label>
-            <VoiceInput onTranscript={handleTranscript} disabled={isProcessing} />
+            <VoiceInput onTranscript={editor.handleTranscript} disabled={isProcessing} />
           </div>
-          {voiceText && (
+          {editor.voiceText && (
             <>
               <div className="p-3 bg-muted rounded-md">
-                <p className="text-sm whitespace-pre-wrap">{voiceText}</p>
+                <p className="text-sm whitespace-pre-wrap">{editor.voiceText}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button
                   size="sm"
-                  onClick={handleFormatAndAdd}
+                  onClick={editor.handleFormatAndAdd}
                   disabled={isProcessing}
                 >
-                  {isFormattingVoice ? (
+                  {editor.isFormattingVoice ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   ) : (
                     <Wand2 className="w-4 h-4 mr-2" />
@@ -401,7 +305,7 @@ export default function DiaryPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={handleAddWithoutFormat}
+                  onClick={editor.handleAddWithoutFormat}
                   disabled={isProcessing}
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -410,7 +314,7 @@ export default function DiaryPage() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => setVoiceText('')}
+                  onClick={() => editor.setVoiceText('')}
                   disabled={isProcessing}
                 >
                   クリア
@@ -425,20 +329,20 @@ export default function DiaryPage() {
       <div className="flex flex-wrap gap-2">
         <Button
           variant="outline"
-          onClick={handleFormatAll}
-          disabled={isProcessing || !content.trim()}
+          onClick={editor.handleFormatAll}
+          disabled={isProcessing || !editor.content.trim()}
         >
-          {isFormatting ? (
+          {editor.isFormatting ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
           ) : (
             <Wand2 className="w-4 h-4 mr-2" />
           )}
           全文整形する
         </Button>
-        {contentHistory.length > 0 && (
+        {editor.canUndo && (
           <Button
             variant="outline"
-            onClick={handleUndo}
+            onClick={editor.handleUndo}
             disabled={isProcessing}
           >
             <Undo2 className="w-4 h-4 mr-2" />
@@ -461,14 +365,14 @@ export default function DiaryPage() {
             削除
           </Button>
         )}
-        <Button onClick={handleSave} disabled={isProcessing || !content.trim()}>
+        <Button onClick={handleSave} disabled={isProcessing || !editor.content.trim()}>
           {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
           {isSaving ? '保存中...' : '保存'}
         </Button>
       </div>
 
       {/* メッセージ */}
-      {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+      {editor.error && <p className="text-red-500 text-sm text-center">{editor.error}</p>}
       {success && (
         <p className="text-green-600 text-sm text-center">{success}</p>
       )}
@@ -487,7 +391,7 @@ export default function DiaryPage() {
                       size="icon"
                       className="h-8 w-8"
                       onClick={handleUpdateSummary}
-                      disabled={isProcessing || !content.trim()}
+                      disabled={isProcessing || !editor.content.trim()}
                     >
                       {isUpdatingSummary ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
