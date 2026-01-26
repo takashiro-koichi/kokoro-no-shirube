@@ -222,7 +222,7 @@ export default function CalendarPage() {
         </div>
         <div className="flex items-center gap-1">
           <span>●</span>
-          <span>日記</span>
+          <span>日記(感情記録なし)</span>
         </div>
         <div className="flex items-center gap-1">
           <span>🌙</span>
