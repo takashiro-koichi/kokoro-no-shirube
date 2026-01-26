@@ -445,7 +445,7 @@ export default function DreamPage() {
           value={content}
           onChange={(e) => setContent(e.target.value)}
           disabled={isProcessing}
-          rows={10}
+          rows={30}
           className="resize-none bg-white text-black"
         />
       </div>
