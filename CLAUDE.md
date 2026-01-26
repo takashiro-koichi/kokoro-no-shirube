@@ -113,6 +113,7 @@ chore: その他
 - [ ] SPEC.md に機能仕様が記載されているか
 - [ ] DEVELOPMENT.md のチェックリストを更新したか
 - [ ] 更新履歴に記載したか
+- [ ] テストがパスするか（`npm run test:run`）
 
 ### 8. PR作成ルール
 
@@ -179,6 +180,32 @@ gh issue list -R takashiro-koichi/kokoro-no-shirube --state open
 - 未対応のIssueがあればユーザーに報告
 - ユーザーの指示に従って実装を進める
 
+### 11. テストルール
+
+**機能追加・修正時は、必ずテストを実行すること。**
+
+```bash
+# テスト実行
+npm run test:run
+
+# ウォッチモードで実行（開発中）
+npm test
+
+# カバレッジ付きで実行
+npm run test:coverage
+```
+
+**テストに関するルール:**
+- 機能追加後は `npm run test:run` でテストがパスすることを確認
+- 既存のテストが失敗した場合は、原因を調査して修正
+- 新しいフックやユーティリティ関数を追加した場合は、テストも追加
+- ビジネスロジックを含む純粋関数は必ずテストを書く
+
+**テストファイルの配置:**
+- フックのテスト: `src/hooks/<フック名>.test.ts`
+- クエリ関数のテスト: `src/lib/supabase/queries.test.ts`
+- セットアップファイル: `src/__tests__/setup.ts`
+
 ---
 
 ## 技術スタック
@@ -211,6 +238,9 @@ npm run type-check
 
 # リント
 npm run lint
+
+# テスト実行
+npm run test:run
 ```
 
 ---
