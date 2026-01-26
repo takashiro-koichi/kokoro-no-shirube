@@ -107,7 +107,8 @@ export default function DreamPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, selectedDate, editor]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, selectedDate]);
 
   useEffect(() => {
     loadData();
