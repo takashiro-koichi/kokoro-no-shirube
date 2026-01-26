@@ -6,3 +6,4 @@ export { CloudBackground } from './CloudBackground';
 export { TimelineBackground } from './TimelineBackground';
 export { SparkleBackground } from './SparkleBackground';
 export { SimpleGradientBackground } from './SimpleGradientBackground';
+export { DreamBackground } from './DreamBackground';

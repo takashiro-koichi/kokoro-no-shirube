@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { GradientBackground } from './GradientBackground';
-import { StarryBackground } from './StarryBackground';
+import { DreamBackground } from './DreamBackground';
 import { BokehBackground } from './BokehBackground';
 import { CloudBackground } from './CloudBackground';
 import { TimelineBackground } from './TimelineBackground';
@@ -20,7 +20,7 @@ export function BackgroundCanvas() {
 
     switch (pathname) {
       case '/app/dream':
-        return <StarryBackground />;
+        return <DreamBackground />;
       case '/app/diary':
         return <BokehBackground />;
       case '/app/calendar':
