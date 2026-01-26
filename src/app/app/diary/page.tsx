@@ -33,11 +33,8 @@ import {
 import { VoiceInput } from '@/components/common/VoiceInput';
 import { DatePicker, parseLocalDate } from '@/components/common/DatePicker';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
+import { useSharedDate } from '@/hooks/useSharedDate';
 import type { Diary, VoiceFormatLevel } from '@/lib/supabase/types';
-
-function formatDate(date: Date): string {
-  return date.toISOString().split('T')[0];
-}
 
 function formatDisplayDate(dateStr: string): string {
   const date = new Date(dateStr);
@@ -47,7 +44,7 @@ function formatDisplayDate(dateStr: string): string {
 
 export default function DiaryPage() {
   const { user } = useAuth();
-  const [selectedDate, setSelectedDate] = useState(formatDate(new Date()));
+  const { selectedDate, setSelectedDate, changeDate, formatDate } = useSharedDate();
   const [content, setContent] = useState('');
   const [diary, setDiary] = useState<Diary | null>(null);
   const [voiceFormatLevel, setVoiceFormatLevel] =
@@ -106,11 +103,9 @@ export default function DiaryPage() {
     loadData();
   }, [loadData]);
 
-  // 日付変更
-  const changeDate = (days: number) => {
-    const date = new Date(selectedDate);
-    date.setDate(date.getDate() + days);
-    setSelectedDate(formatDate(date));
+  // 日付変更（successをクリア）
+  const handleChangeDate = (days: number) => {
+    changeDate(days);
     setSuccess(null);
   };
 
@@ -326,8 +321,8 @@ export default function DiaryPage() {
 
   // スワイプナビゲーション
   const swipeRef = useSwipeNavigation<HTMLDivElement>({
-    onSwipeLeft: () => !isToday && !isProcessing && changeDate(1),
-    onSwipeRight: () => !isProcessing && changeDate(-1),
+    onSwipeLeft: () => !isToday && !isProcessing && handleChangeDate(1),
+    onSwipeRight: () => !isProcessing && handleChangeDate(-1),
     enabled: !isProcessing,
   });
 
@@ -346,7 +341,7 @@ export default function DiaryPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => changeDate(-1)}
+          onClick={() => handleChangeDate(-1)}
           disabled={isProcessing}
         >
           <ChevronLeft className="w-5 h-5" />
@@ -363,8 +358,8 @@ export default function DiaryPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => changeDate(1)}
-          disabled={isProcessing || selectedDate === formatDate(new Date())}
+          onClick={() => handleChangeDate(1)}
+          disabled={isProcessing || isToday}
         >
           <ChevronRight className="w-5 h-5" />
         </Button>
