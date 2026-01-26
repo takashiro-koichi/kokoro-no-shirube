@@ -421,120 +421,109 @@ function WishlistCard({
     deletingId === wishlist.id || achievingId === wishlist.id || unachievingId === wishlist.id;
 
   return (
-    <Card className="relative">
-      <CardContent className="p-4">
-        {/* 右上に削除ボタン */}
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => onDelete(wishlist.id)}
-          disabled={isProcessing}
-          className="absolute top-2 right-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-          title="削除"
-        >
-          {deletingId === wishlist.id ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Trash2 className="w-4 h-4" />
-          )}
-        </Button>
-
-        {/* メインコンテンツ */}
-        <div className="pr-10 space-y-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-medium">{wishlist.title}</h3>
-            <Badge variant={status.variant}>
+    <Card>
+      <CardContent className="p-3">
+        {/* ヘッダー: タイトル + バッジ + アクションボタン */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <h3 className="font-medium truncate">{wishlist.title}</h3>
+            <Badge variant={status.variant} className="shrink-0">
               <StatusIcon className="w-3 h-3 mr-1" />
               {status.label}
             </Badge>
           </div>
-          {wishlist.description && (
-            <p className="text-sm text-muted-foreground">
-              {wishlist.description}
-            </p>
-          )}
-          {/* 条件表示 */}
-          <div className="text-sm space-y-1">
+          <div className="flex items-center gap-1 shrink-0">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onEdit(wishlist)}
+              disabled={isProcessing}
+              title="編集"
+              className="h-7 w-7 p-0"
+            >
+              <Edit2 className="w-4 h-4" />
+            </Button>
+            {wishlist.status === 'achieved' ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onUnachieve(wishlist.id)}
+                disabled={isProcessing}
+                title="元に戻す"
+                className="h-7 w-7 p-0"
+              >
+                {unachievingId === wishlist.id ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="w-4 h-4" />
+                )}
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onAchieve(wishlist.id)}
+                disabled={isProcessing}
+                title="達成済みにする"
+                className="h-7 w-7 p-0 text-green-600 hover:text-green-700"
+              >
+                {achievingId === wishlist.id ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4" />
+                )}
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onDelete(wishlist.id)}
+              disabled={isProcessing}
+              title="削除"
+              className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
+            >
+              {deletingId === wishlist.id ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {/* サブ情報: 条件・期限（コンパクト表示） */}
+        {(wishlist.condition1_attribute || wishlist.deadline || wishlist.achieved_at) && (
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs text-muted-foreground">
             {wishlist.condition1_attribute && (
-              <div>
-                条件1:{' '}
+              <span>
                 {formatCondition(
                   wishlist.condition1_attribute,
                   wishlist.condition1_operator,
                   wishlist.condition1_value,
                   wishlist.condition1_met
                 )}
-              </div>
+              </span>
             )}
             {wishlist.condition2_attribute && (
-              <div>
-                条件2:{' '}
+              <span>
                 {formatCondition(
                   wishlist.condition2_attribute,
                   wishlist.condition2_operator,
                   wishlist.condition2_value,
                   wishlist.condition2_met
                 )}
-              </div>
+              </span>
             )}
             {wishlist.deadline && (
-              <div className="text-muted-foreground">
-                期限: {new Date(wishlist.deadline).toLocaleDateString('ja-JP')}
-              </div>
+              <span>期限: {new Date(wishlist.deadline).toLocaleDateString('ja-JP')}</span>
             )}
             {wishlist.achieved_at && (
-              <div className="text-green-600">
-                達成日:{' '}
-                {new Date(wishlist.achieved_at).toLocaleDateString('ja-JP')}
-              </div>
+              <span className="text-green-600">
+                達成: {new Date(wishlist.achieved_at).toLocaleDateString('ja-JP')}
+              </span>
             )}
           </div>
-        </div>
-
-        {/* 右下に編集・達成ボタン */}
-        <div className="flex justify-end gap-2 mt-3 pt-3 border-t">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onEdit(wishlist)}
-            disabled={isProcessing}
-            title="編集"
-          >
-            <Edit2 className="w-4 h-4 mr-1" />
-            編集
-          </Button>
-          {wishlist.status === 'achieved' ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onUnachieve(wishlist.id)}
-              disabled={isProcessing}
-              title="元に戻す"
-            >
-              {unachievingId === wishlist.id ? (
-                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-              ) : (
-                <RotateCcw className="w-4 h-4 mr-1" />
-              )}
-              元に戻す
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              variant="default"
-              onClick={() => onAchieve(wishlist.id)}
-              disabled={isProcessing}
-              title="達成済みにする"
-            >
-              {achievingId === wishlist.id ? (
-                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-              ) : (
-                <Check className="w-4 h-4 mr-1" />
-              )}
-              達成
-            </Button>
-          )}
-        </div>
+        )}
       </CardContent>
     </Card>
   );
