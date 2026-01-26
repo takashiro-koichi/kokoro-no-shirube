@@ -9,12 +9,14 @@ import {
   Loader2,
   Trash2,
   Edit2,
+  RotateCcw,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import {
   getWishlists,
   deleteWishlist,
   achieveWishlist,
+  unachieveWishlist,
   getUserAttributesMap,
   getUserProfile,
   calculateAge,
@@ -70,6 +72,7 @@ export default function WishlistPage() {
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [achievingId, setAchievingId] = useState<string | null>(null);
+  const [unachievingId, setUnachievingId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -177,6 +180,50 @@ export default function WishlistPage() {
     }
   };
 
+  // 達成取り消し
+  const handleUnachieve = async (id: string) => {
+    if (!confirm('達成済みを取り消しますか？')) return;
+
+    setUnachievingId(id);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const supabase = createClient();
+      // 条件を再評価して適切なステータスを決定
+      const wishlist = wishlists.find((w) => w.id === id);
+      if (!wishlist) return;
+
+      const { isAchievable } = evaluateWishlistConditions(
+        wishlist,
+        attributesMap,
+        userAge
+      );
+      const newStatus = isAchievable ? 'achievable' : 'pending';
+
+      const updated = await unachieveWishlist(supabase, id, newStatus);
+      const { condition1Met, condition2Met } = evaluateWishlistConditions(
+        updated,
+        attributesMap,
+        userAge
+      );
+
+      setWishlists((prev) =>
+        prev.map((w) =>
+          w.id === id
+            ? { ...w, ...updated, condition1_met: condition1Met, condition2_met: condition2Met }
+            : w
+        )
+      );
+      setSuccess('元に戻しました');
+    } catch (err) {
+      console.error('Failed to unachieve wishlist:', err);
+      setError('取り消しに失敗しました');
+    } finally {
+      setUnachievingId(null);
+    }
+  };
+
   // 保存完了後
   const handleSaveComplete = (saved: Wishlist) => {
     const { condition1Met, condition2Met } = evaluateWishlistConditions(
@@ -266,8 +313,10 @@ export default function WishlistPage() {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onAchieve={handleAchieve}
+              onUnachieve={handleUnachieve}
               deletingId={deletingId}
               achievingId={achievingId}
+              unachievingId={unachievingId}
             />
           ))}
         </section>
@@ -288,8 +337,10 @@ export default function WishlistPage() {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onAchieve={handleAchieve}
+              onUnachieve={handleUnachieve}
               deletingId={deletingId}
               achievingId={achievingId}
+              unachievingId={unachievingId}
             />
           ))}
         </section>
@@ -310,8 +361,10 @@ export default function WishlistPage() {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onAchieve={handleAchieve}
+              onUnachieve={handleUnachieve}
               deletingId={deletingId}
               achievingId={achievingId}
+              unachievingId={unachievingId}
             />
           ))}
         </section>
@@ -342,8 +395,10 @@ function WishlistCard({
   onEdit,
   onDelete,
   onAchieve,
+  onUnachieve,
   deletingId,
   achievingId,
+  unachievingId,
 }: {
   wishlist: WishlistWithEvaluation;
   formatCondition: (
@@ -355,109 +410,130 @@ function WishlistCard({
   onEdit: (w: Wishlist) => void;
   onDelete: (id: string) => void;
   onAchieve: (id: string) => void;
+  onUnachieve: (id: string) => void;
   deletingId: string | null;
   achievingId: string | null;
+  unachievingId: string | null;
 }) {
   const status = STATUS_CONFIG[wishlist.status];
   const StatusIcon = status.icon;
   const isProcessing =
-    deletingId === wishlist.id || achievingId === wishlist.id;
+    deletingId === wishlist.id || achievingId === wishlist.id || unachievingId === wishlist.id;
 
   return (
-    <Card>
+    <Card className="relative">
       <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 space-y-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-medium">{wishlist.title}</h3>
-              <Badge variant={status.variant}>
-                <StatusIcon className="w-3 h-3 mr-1" />
-                {status.label}
-              </Badge>
-            </div>
-            {wishlist.description && (
-              <p className="text-sm text-muted-foreground">
-                {wishlist.description}
-              </p>
-            )}
-            {/* 条件表示 */}
-            <div className="text-sm space-y-1">
-              {wishlist.condition1_attribute && (
-                <div>
-                  条件1:{' '}
-                  {formatCondition(
-                    wishlist.condition1_attribute,
-                    wishlist.condition1_operator,
-                    wishlist.condition1_value,
-                    wishlist.condition1_met
-                  )}
-                </div>
-              )}
-              {wishlist.condition2_attribute && (
-                <div>
-                  条件2:{' '}
-                  {formatCondition(
-                    wishlist.condition2_attribute,
-                    wishlist.condition2_operator,
-                    wishlist.condition2_value,
-                    wishlist.condition2_met
-                  )}
-                </div>
-              )}
-              {wishlist.deadline && (
-                <div className="text-muted-foreground">
-                  期限: {new Date(wishlist.deadline).toLocaleDateString('ja-JP')}
-                </div>
-              )}
-              {wishlist.achieved_at && (
-                <div className="text-green-600">
-                  達成日:{' '}
-                  {new Date(wishlist.achieved_at).toLocaleDateString('ja-JP')}
-                </div>
-              )}
-            </div>
+        {/* 右上に削除ボタン */}
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => onDelete(wishlist.id)}
+          disabled={isProcessing}
+          className="absolute top-2 right-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+          title="削除"
+        >
+          {deletingId === wishlist.id ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Trash2 className="w-4 h-4" />
+          )}
+        </Button>
+
+        {/* メインコンテンツ */}
+        <div className="pr-10 space-y-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-medium">{wishlist.title}</h3>
+            <Badge variant={status.variant}>
+              <StatusIcon className="w-3 h-3 mr-1" />
+              {status.label}
+            </Badge>
           </div>
-          {/* アクション */}
-          <div className="flex flex-col gap-1">
-            {wishlist.status !== 'achieved' && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onAchieve(wishlist.id)}
-                disabled={isProcessing}
-                title="達成済みにする"
-              >
-                {achievingId === wishlist.id ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Check className="w-4 h-4" />
+          {wishlist.description && (
+            <p className="text-sm text-muted-foreground">
+              {wishlist.description}
+            </p>
+          )}
+          {/* 条件表示 */}
+          <div className="text-sm space-y-1">
+            {wishlist.condition1_attribute && (
+              <div>
+                条件1:{' '}
+                {formatCondition(
+                  wishlist.condition1_attribute,
+                  wishlist.condition1_operator,
+                  wishlist.condition1_value,
+                  wishlist.condition1_met
                 )}
-              </Button>
+              </div>
             )}
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => onEdit(wishlist)}
-              disabled={isProcessing}
-              title="編集"
-            >
-              <Edit2 className="w-4 h-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => onDelete(wishlist.id)}
-              disabled={isProcessing}
-              className="text-red-600 hover:text-red-700"
-              title="削除"
-            >
-              {deletingId === wishlist.id ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Trash2 className="w-4 h-4" />
-              )}
-            </Button>
+            {wishlist.condition2_attribute && (
+              <div>
+                条件2:{' '}
+                {formatCondition(
+                  wishlist.condition2_attribute,
+                  wishlist.condition2_operator,
+                  wishlist.condition2_value,
+                  wishlist.condition2_met
+                )}
+              </div>
+            )}
+            {wishlist.deadline && (
+              <div className="text-muted-foreground">
+                期限: {new Date(wishlist.deadline).toLocaleDateString('ja-JP')}
+              </div>
+            )}
+            {wishlist.achieved_at && (
+              <div className="text-green-600">
+                達成日:{' '}
+                {new Date(wishlist.achieved_at).toLocaleDateString('ja-JP')}
+              </div>
+            )}
           </div>
+        </div>
+
+        {/* 右下に編集・達成ボタン */}
+        <div className="flex justify-end gap-2 mt-3 pt-3 border-t">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onEdit(wishlist)}
+            disabled={isProcessing}
+            title="編集"
+          >
+            <Edit2 className="w-4 h-4 mr-1" />
+            編集
+          </Button>
+          {wishlist.status === 'achieved' ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onUnachieve(wishlist.id)}
+              disabled={isProcessing}
+              title="元に戻す"
+            >
+              {unachievingId === wishlist.id ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <RotateCcw className="w-4 h-4 mr-1" />
+              )}
+              元に戻す
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="default"
+              onClick={() => onAchieve(wishlist.id)}
+              disabled={isProcessing}
+              title="達成済みにする"
+            >
+              {achievingId === wishlist.id ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <Check className="w-4 h-4 mr-1" />
+              )}
+              達成
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
