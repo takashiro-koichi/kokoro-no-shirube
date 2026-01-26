@@ -9,6 +9,7 @@ import {
   Loader2,
   Undo2,
   Plus,
+  RefreshCw,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -23,6 +24,12 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { VoiceInput } from '@/components/common/VoiceInput';
 import { DatePicker, parseLocalDate } from '@/components/common/DatePicker';
 import type { Diary, VoiceFormatLevel } from '@/lib/supabase/types';
@@ -56,6 +63,7 @@ export default function DiaryPage() {
   const [isFormatting, setIsFormatting] = useState(false);
   const [isFormattingVoice, setIsFormattingVoice] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdatingSummary, setIsUpdatingSummary] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -271,7 +279,44 @@ export default function DiaryPage() {
     }
   };
 
-  const isProcessing = isSaving || isFormatting || isFormattingVoice || isDeleting;
+  // 要約更新
+  const handleUpdateSummary = async () => {
+    if (!diary || !content.trim()) return;
+
+    setIsUpdatingSummary(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const supabase = createClient();
+
+      const analyzeResponse = await fetch('/api/diary/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+      });
+
+      if (!analyzeResponse.ok) {
+        throw new Error('分析に失敗しました');
+      }
+
+      const analyzeData = await analyzeResponse.json();
+      const updatedDiary = await updateDiary(supabase, diary.id, {
+        summary: analyzeData.summary,
+        emotion_tags: analyzeData.emotion_tags,
+      });
+
+      setDiary(updatedDiary);
+      setSuccess('要約を更新しました');
+    } catch (err) {
+      console.error('Update summary error:', err);
+      setError('要約の更新に失敗しました');
+    } finally {
+      setIsUpdatingSummary(false);
+    }
+  };
+
+  const isProcessing = isSaving || isFormatting || isFormattingVoice || isDeleting || isUpdatingSummary;
 
   if (isLoading) {
     return (
@@ -430,6 +475,31 @@ export default function DiaryPage() {
       {diary && (diary.summary || diary.emotion_tags?.length) && (
         <Card className="bg-muted/50">
           <CardContent className="pt-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">分析結果</span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={handleUpdateSummary}
+                      disabled={isProcessing || !content.trim()}
+                    >
+                      {isUpdatingSummary ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>要約を更新</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             {diary.emotion_tags && diary.emotion_tags.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {diary.emotion_tags.map((tag, i) => (
