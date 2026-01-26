@@ -160,6 +160,18 @@ git checkout -b <ブランチ名>
 | ドキュメント | `docs/<内容>` | `docs/api-guide` |
 | リファクタリング | `refactor/<対象>` | `refactor/auth-flow` |
 
+### 10. セッション開始時のIssue確認ルール
+
+**セッション開始時に、未対応のGitHub Issueがないか確認すること。**
+
+```bash
+# オープンなIssueを確認
+gh issue list -R takashiro-koichi/kokoro-no-shirube --state open
+```
+
+- 未対応のIssueがあればユーザーに報告
+- ユーザーの指示に従って実装を進める
+
 ---
 
 ## 技術スタック
