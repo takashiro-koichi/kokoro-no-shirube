@@ -71,7 +71,7 @@ export default function SettingsPage() {
     <div className="space-y-6 max-w-lg mx-auto">
       <h1 className="text-2xl font-bold">設定</h1>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         {settingsItems.map((item) => (
           <Link key={item.href} href={item.href}>
             <Card className={`hover:bg-accent/50 transition-colors cursor-pointer ${
