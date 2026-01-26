@@ -114,6 +114,26 @@ chore: その他
 - [ ] DEVELOPMENT.md のチェックリストを更新したか
 - [ ] 更新履歴に記載したか
 
+### 8. PR作成ルール
+
+**PRを作成する前に、必ず既存PRの有無を確認すること。**
+
+```bash
+# 既存PRの確認
+gh pr list -R takashiro-koichi/kokoro-no-shirube --head <ブランチ名>
+```
+
+- **PRが存在しない場合**: 新規PRを作成
+- **PRが既に存在する場合**: 必要に応じてPRのタイトル・本文を更新
+
+```bash
+# PR作成（-R フラグ必須：サンドボックス環境のプロキシ対応）
+gh pr create -R takashiro-koichi/kokoro-no-shirube --title "タイトル" --body "本文"
+
+# 既存PRの更新
+gh pr edit <PR番号> -R takashiro-koichi/kokoro-no-shirube --title "新タイトル" --body "新本文"
+```
+
 ---
 
 ## 技術スタック
