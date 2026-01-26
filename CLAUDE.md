@@ -139,6 +139,13 @@ git branch -d <ブランチ名>
 
 **PRマージ後は、不要になったブランチを削除すること。**
 
+**PRマージ後は、未対応のIssueがないか確認すること。**
+
+```bash
+# オープンなIssueを確認
+gh issue list -R takashiro-koichi/kokoro-no-shirube --state open
+```
+
 ### 9. ブランチ運用ルール
 
 **新機能開発を開始する前に、必ずmainブランチを最新化し、適切な名前のブランチを作成すること。**
