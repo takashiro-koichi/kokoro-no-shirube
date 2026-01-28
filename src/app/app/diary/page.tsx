@@ -273,9 +273,9 @@ export default function DiaryPage() {
           value={editor.content}
           onChange={(e) => editor.setContent(e.target.value)}
           disabled={isProcessing}
-          rows={40}
+          rows={12}
           className="resize-none bg-white text-black"
-          style={{ minHeight: '500px', fieldSizing: 'fixed' }}
+          style={{ minHeight: '150px', fieldSizing: 'fixed' }}
         />
       </div>
 
