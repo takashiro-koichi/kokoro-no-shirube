@@ -353,9 +353,9 @@ export default function DreamPage() {
           value={editor.content}
           onChange={(e) => editor.setContent(e.target.value)}
           disabled={isProcessing}
-          rows={30}
+          rows={9}
           className="resize-none bg-white text-black"
-          style={{ minHeight: '400px', fieldSizing: 'fixed' }}
+          style={{ minHeight: '120px', fieldSizing: 'fixed' }}
         />
       </div>
 
