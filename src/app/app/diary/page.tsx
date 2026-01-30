@@ -35,10 +35,12 @@ import { DatePicker, parseLocalDate } from '@/components/common/DatePicker';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { useSharedDate } from '@/hooks/useSharedDate';
 import { useContentEditor } from '@/hooks/useContentEditor';
+import { useToast } from '@/components/ui/use-toast';
 import type { Diary, VoiceFormatLevel } from '@/lib/supabase/types';
 
 export default function DiaryPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const { selectedDate, setSelectedDate, changeDate, formatDate } = useSharedDate();
   const [diary, setDiary] = useState<Diary | null>(null);
   const [voiceFormatLevel, setVoiceFormatLevel] =
@@ -51,7 +53,6 @@ export default function DiaryPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingSummary, setIsUpdatingSummary] = useState(false);
-  const [success, setSuccess] = useState<string | null>(null);
 
   // 日記と設定を読み込む
   const loadData = useCallback(async () => {
@@ -90,10 +91,9 @@ export default function DiaryPage() {
     loadData();
   }, [loadData]);
 
-  // 日付変更（successをクリア）
+  // 日付変更
   const handleChangeDate = (days: number) => {
     changeDate(days);
-    setSuccess(null);
   };
 
   // 保存
@@ -102,7 +102,6 @@ export default function DiaryPage() {
 
     setIsSaving(true);
     editor.setError(null);
-    setSuccess(null);
 
     try {
       const supabase = createClient();
@@ -145,7 +144,10 @@ export default function DiaryPage() {
       }
 
       setDiary(savedDiary);
-      setSuccess('保存しました');
+      toast({
+        variant: 'success',
+        title: '保存しました',
+      });
       editor.clearHistory(); // 保存後は履歴をクリア
     } catch (err) {
       console.error('Save error:', err);
@@ -169,7 +171,10 @@ export default function DiaryPage() {
       await deleteDiary(supabase, diary.id);
       setDiary(null);
       editor.reset();
-      setSuccess('削除しました');
+      toast({
+        variant: 'success',
+        title: '削除しました',
+      });
     } catch (err) {
       console.error('Delete error:', err);
       editor.setError('削除に失敗しました');
@@ -184,7 +189,6 @@ export default function DiaryPage() {
 
     setIsUpdatingSummary(true);
     editor.setError(null);
-    setSuccess(null);
 
     try {
       const supabase = createClient();
@@ -206,7 +210,10 @@ export default function DiaryPage() {
       });
 
       setDiary(updatedDiary);
-      setSuccess('要約を更新しました');
+      toast({
+        variant: 'success',
+        title: '要約を更新しました',
+      });
     } catch (err) {
       console.error('Update summary error:', err);
       editor.setError('要約の更新に失敗しました');
@@ -249,7 +256,6 @@ export default function DiaryPage() {
           date={parseLocalDate(selectedDate)}
           onDateChange={(date) => {
             setSelectedDate(formatDate(date));
-            setSuccess(null);
           }}
           disabled={isProcessing}
           maxDate={new Date()}
@@ -375,9 +381,6 @@ export default function DiaryPage() {
 
       {/* メッセージ */}
       {editor.error && <p className="text-red-500 text-sm text-center">{editor.error}</p>}
-      {success && (
-        <p className="text-green-600 text-sm text-center">{success}</p>
-      )}
 
       {/* 分析結果 */}
       {diary && (diary.summary || diary.emotion_tags?.length) && (
